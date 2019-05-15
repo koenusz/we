@@ -26,6 +26,6 @@ defmodule WE.Task do
 
   @spec add_sequence_flow(Task.t(), SequenceFlow.t()) :: Task.t()
   def add_sequence_flow(task, sequence_flow) do
-    %{task | sequence_flows: [sequence_flow, task.sequence_flows]}
+    %{task | sequence_flows: [sequence_flow | task.sequence_flows]}
   end
 end

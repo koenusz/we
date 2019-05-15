@@ -31,7 +31,7 @@ defmodule WE.Workflow do
     %Workflow{name: name, steps: steps}
   end
 
-  @spec validate(%Workflow{}) :: :ok | [{:error, String.t()}]
+  @spec validate(Workflow.t()) :: :ok | [{:error, String.t()}]
   def validate(workflow) do
     result =
       []
@@ -72,5 +72,8 @@ defmodule WE.Workflow do
   end
 
   defp step_names_unique?() do
+  end
+
+  defp each_step_has_default_sequence_flow() do
   end
 end

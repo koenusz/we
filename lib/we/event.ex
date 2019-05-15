@@ -27,8 +27,8 @@ defmodule WE.Event do
     %Event{name: name, type: :message, sequence_flows: sequence_flows}
   end
 
-  @spec add_sequence_flow(Event.t(), SequenceFlow.t()) :: Event.t()
+  @spec add_sequence_flow(%Event{}, SequenceFlow.t()) :: %Event{}
   def add_sequence_flow(event, sequence_flow) do
-    %{event | sequence_flows: [sequence_flow, event.sequence_flows]}
+    %{event | sequence_flows: [sequence_flow | event.sequence_flows]}
   end
 end

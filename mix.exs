@@ -7,7 +7,8 @@ defmodule WE.MixProject do
       version: "0.1.0",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      elixirc_paths: compiler_paths(Mix.env())
     ]
   end
 
@@ -28,4 +29,9 @@ defmodule WE.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
+
+  # provide paths for different environments
+  def compiler_paths(:dev), do: compiler_paths(:test)
+  def compiler_paths(:test), do: ["test/helpers"] ++ compiler_paths(:prod)
+  def compiler_paths(_), do: ["lib"]
 end
