@@ -6,17 +6,13 @@ defmodule WE.Event do
     field :name, String.t()
     field :sequence_flows, list(SequenceFlow.t())
     field :type, atom(), default: :message
-    field :gateway, atom(), default: :none
+    field :gateway, Gateway.gateway(), default: :none
   end
 
-  @spec next(%Event{}, term()) :: :error | {:ok, [%SequenceFlow{}]}
+  @spec next(Event.t(), term()) :: :error | {:ok, [SequenceFlow.t()]}
   def next(event, data) do
-    args =
-      [event.sequence_flows, [], data]
-      |> IO.inspect()
-
+    args = [event.sequence_flows, [], data]
     apply(Gateway, event.gateway, args)
-    |> IO.inspect()
   end
 
   def start_event(name, sequence_flows) do
@@ -29,5 +25,10 @@ defmodule WE.Event do
 
   def message_event(name, sequence_flows) do
     %Event{name: name, type: :message, sequence_flows: sequence_flows}
+  end
+
+  @spec add_sequence_flow(Event.t(), SequenceFlow.t()) :: Event.t()
+  def add_sequence_flow(event, sequence_flow) do
+    %{event | sequence_flows: [sequence_flow, event.sequence_flows]}
   end
 end

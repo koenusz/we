@@ -1,6 +1,8 @@
 defmodule WE.Gateway do
   alias WE.{Gateway, SequenceFlow}
 
+  @type gateway :: :none | :exclusive | :default | :event | :parallel | :inclusive
+
   def none(sequence_flows, _fun, _data) do
     sequence_flows
     |> IO.inspect()
