@@ -9,6 +9,12 @@ defmodule WE.Event do
     field :gateway, Gateway.gateway(), default: :none
   end
 
+  def sequence_flows do
+  end
+
+  def receive_message(message, link \\ default) do
+  end
+
   @spec next(Event.t(), term()) :: :error | {:ok, [SequenceFlow.t()]}
   def next(event, data) do
     args = [event.sequence_flows, [], data]

@@ -20,8 +20,13 @@ defmodule WE.Task do
     task.command.(data)
   end
 
-  def next(task, data) do
-    task.links[0]
+  def sequence_flows do
+  end
+
+  def start_task(task) do
+  end
+
+  def complete_task(task, link \\ default) do
   end
 
   @spec add_sequence_flow(Task.t(), SequenceFlow.t()) :: Task.t()
