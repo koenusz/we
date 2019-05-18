@@ -12,13 +12,13 @@ defmodule WE.WorkflowHistory do
     %WE.WorkflowHistory{workflow_name: workflow_name}
   end
 
-  @spec record_task_start(WorkflowHistory.t(), Task.t()) :: WorkflowHistory.t()
+  @spec record_task_start(WorkflowHistory.t(), WE.Task.t()) :: WorkflowHistory.t()
   def record_task_start(history, task) do
     record = WE.HistoryRecord.record_task_start(task.name)
     update_records(history, record)
   end
 
-  @spec record_task_complete(WorkflowHistory.t(), Task.t()) :: WorkflowHistory.t()
+  @spec record_task_complete(WorkflowHistory.t(), WE.Task.t()) :: WorkflowHistory.t()
   def record_task_complete(history, task) do
     record = WE.HistoryRecord.record_task_complete(task.name)
     update_records(history, record)

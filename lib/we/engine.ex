@@ -18,48 +18,74 @@ defmodule WE.Engine do
     event = Workflow.get_start(workflow)
     history = WorkflowHistory.record_event(history, event)
     next_list = Workflow.get_next(workflow, event.name)
-
     reply_or_end({workflow, history, next_list})
+  end
+
+  @impl GenServer
+  def handle_call(:start, _from, {workflow, history, current}) do
+    {:reply, {:error, "already started"}, {workflow, history, current}}
   end
 
   @impl GenServer
   def handle_call({:start_task, task}, _from, {workflow, history, current}) do
-    history = WorkflowHistory.record_task_start(history, task)
-    {:reply, current, {workflow, history, current}}
+    if Enum.member?(current, task) and !task.started do
+      current =
+        current
+        |> Enum.map(fn step ->
+          if step == task do
+            WE.Task.start_task(step)
+          else
+            step
+          end
+        end)
+
+      history = WorkflowHistory.record_task_start(history, task)
+      {:reply, :ok, {workflow, history, current}}
+    else
+      {:reply, {:error, "task not in current state"}, {workflow, history, current}}
+    end
   end
 
   @impl GenServer
-  def handle_call({:complete_task, task, sequenceflows}, _from, {workflow, history, _current}) do
-    history = WorkflowHistory.record_task_complete(history, task)
-    next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)
-    reply_or_end({workflow, history, next_list})
+  def handle_call({:complete_task, task, sequenceflows}, _from, {workflow, history, current}) do
+    if Enum.member?(current, task) do
+      history = WorkflowHistory.record_task_complete(history, task)
+      next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)
+      reply_or_end({workflow, history, next_list})
+    else
+      {:reply, {:error, "task not in current state"}, {workflow, history, current}}
+    end
   end
 
   @impl GenServer
-  def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, _current}) do
-    history = WorkflowHistory.record_event(history, event)
-    next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)
-    reply_or_end({workflow, history, next_list})
+  def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, current}) do
+    if Enum.member?(current, event) do
+      history = WorkflowHistory.record_event(history, event)
+      next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)
+      reply_or_end({workflow, history, next_list})
+    else
+      {:reply, {:error, "event not in current state"}, {workflow, history, current}}
+    end
   end
 
   @impl GenServer
   def handle_call(:current_state, _from, {workflow, history, current}) do
-    {:reply, current, {workflow, history, current}}
+    {:reply, {:ok, current}, {workflow, history, current}}
   end
 
   @impl GenServer
   def handle_call(:history, _from, {workflow, history, current}) do
-    {:reply, history, {workflow, history, current}}
+    {:reply, {:ok, history}, {workflow, history, current}}
   end
 
   defp reply_or_end({workflow, history, next_list}) do
     case Workflow.get_stops(next_list) do
       [] ->
-        {:reply, history, {workflow, history, next_list}}
+        {:reply, :ok, {workflow, history, next_list}}
 
       stops ->
         history = WorkflowHistory.record_event(history, Enum.at(stops, 0))
-        {:reply, history, {workflow, history, next_list}}
+        {:reply, :ok, {workflow, history, next_list}}
     end
   end
 

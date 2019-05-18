@@ -8,11 +8,12 @@ defmodule WE.EngineTest do
 
     {:ok, engine} = Engine.start_link(workflow)
 
-    state =
+    :ok =
       engine
       |> Engine.start_execution()
 
-    assert length(state.records) == 2
+    {:ok, history} = Engine.history(engine)
+    assert length(history.records) == 2
   end
 
   test "complete task with default flow" do
@@ -24,16 +25,15 @@ defmodule WE.EngineTest do
     |> Engine.start_execution()
 
     Engine.start_task(engine, task)
-
-    Engine.history(engine)
+    assert {:ok, [task]} == Engine.current_state(engine)
 
     Engine.complete_task(engine, task)
-
-    Engine.current_state(engine)
-
-    history = Engine.history(engine)
-
+    {:ok, history} = Engine.history(engine)
     assert length(history.records) == 4
+    Engine.start_task(engine, task)
+
+    assert {:ok, [%WE.Event{name: "stop", sequence_flows: [], type: :end}]} ==
+             Engine.current_state(engine)
   end
 
   test "complete task with designated flow" do
@@ -44,11 +44,21 @@ defmodule WE.EngineTest do
     engine
     |> Engine.start_execution()
 
+    :ok = Engine.start_task(engine, task)
+    task = Task.start_task(task)
+    assert {:ok, [task]} == Engine.current_state(engine)
+
+    Engine.start_task(engine, task)
+    :ok = Engine.complete_task(engine, task, Task.flow_to(task, ["stop"]))
+
+    {:ok, history} =
+      Engine.history(engine)
+      |> IO.inspect()
+
+    assert length(history.records) == 4
     Engine.start_task(engine, task)
 
-    Engine.complete_task(engine, task, Task.flow_to(task, ["stop"]))
-
-    history = Engine.history(engine)
-    assert length(history.records) == 4
+    assert {:ok, [%WE.Event{name: "stop", sequence_flows: [], type: :end}]} ==
+             Engine.current_state(engine)
   end
 end

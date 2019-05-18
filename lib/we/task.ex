@@ -9,6 +9,12 @@ defmodule WE.Task do
     field :name, String.t()
     field :sequence_flows, list(SequenceFlow.t())
     field :type, task_type(), default: :service
+    field :started, boolean, default: false
+  end
+
+  @spec start_task(Task.t()) :: Task.t()
+  def start_task(task) do
+    %{task | started: true}
   end
 
   @spec flow_to(Task.t(), [String.t()]) :: [SequenceFlow.t()]
