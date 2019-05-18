@@ -1,13 +1,19 @@
 defmodule WE.SequenceFlow do
   use TypedStruct
 
-  typedstruct enforce: true, opaque: true do
+  typedstruct enforce: true do
     field :from, String.t()
     field :to, String.t()
     field :default, boolean, default: false
   end
 
   alias WE.SequenceFlow
+
+  @spec get_default_flow([WE.SequenceFlow.t()]) :: [WE.SequenceFlow.t()]
+  def get_default_flow(list) do
+    list
+    |> Enum.filter(fn flow -> flow.default end)
+  end
 
   @spec add_sequence_flow(list(WE.SequenceFlow.t()), WE.SequenceFlow.t()) ::
           list(WE.SequenceFlow.t())

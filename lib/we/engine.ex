@@ -1,6 +1,11 @@
 defmodule WE.Engine do
   use GenServer
+  use TypedStruct
   alias WE.{Workflow, WorkflowHistory}
+
+  typedstruct enforce: true, opaque: true do
+    field :current, [Event.t() | Task.t()]
+  end
 
   @impl GenServer
   @spec init(%Workflow{}, any()) :: {:ok, {%Workflow{}, any()}}
@@ -9,61 +14,53 @@ defmodule WE.Engine do
   end
 
   @impl GenServer
-  def handle_call({:start, data}, _from, {workflow, history}) do
+  def handle_call(:start, _from, {workflow, history}) do
     event = Workflow.get_start(workflow)
-    history = WorkflowHistory.record_event(history, event.name)
-    next_list = Workflow.get_next(workflow, event.name, data)
+    history = WorkflowHistory.record_event(history, event)
+    next_list = Workflow.get_next(workflow, event.name)
 
-    {:reply, history, {workflow, history, data}, {:continue, {:step, next_list}}}
+    reply_or_end({workflow, history, next_list})
   end
 
   @impl GenServer
-  def handle_call(:start_task, {workflow, history, data}) do
+  def handle_call({:start_task, task}, _from, {workflow, history, current}) do
+    history = WorkflowHistory.record_task_start(history, task)
+    {:reply, current, {workflow, history, current}}
   end
 
   @impl GenServer
-  def handle_call({:complete, data}, {workflow, state}) do
+  def handle_call({:complete_task, task, sequenceflows}, _from, {workflow, history, _current}) do
+    history = WorkflowHistory.record_task_complete(history, task)
+    next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)
+    reply_or_end({workflow, history, next_list})
   end
 
   @impl GenServer
-  def handle_call(:current, {workflow, state}) do
+  def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, _current}) do
+    history = WorkflowHistory.record_event(history, event)
+    next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)
+    reply_or_end({workflow, history, next_list})
   end
 
   @impl GenServer
-  def handle_call(:event, {workflow, state}) do
+  def handle_call(:current_state, _from, {workflow, history, current}) do
+    {:reply, current, {workflow, history, current}}
   end
 
   @impl GenServer
-  def handle_call(:history, {workflow, state}) do
-    state
+  def handle_call(:history, _from, {workflow, history, current}) do
+    {:reply, history, {workflow, history, current}}
   end
 
-  @impl GenServer
-  @spec handle_continue(
-          :task | {:step, [Task.t() | Event.t()]},
-          {Workflow.t(), WorkflowHistory.t(), any()}
-        ) ::
-          {:noreply, {Workflow.t(), WorkflowHistory.t(), any()}}
-          | {:noreply, any(), {Workflow.t(), WorkflowHistory.t(), any()},
-             {:continue, {:step, any()}}}
-  def handle_continue({:step, steps}, {workflow, history, data}) do
-    case steps do
+  defp reply_or_end({workflow, history, next_list}) do
+    case Workflow.get_stops(next_list) do
       [] ->
-        {:noreply, {workflow, history, data}}
+        {:reply, history, {workflow, history, next_list}}
 
-      [head | tail] ->
-        history =
-          case head.__struct__ do
-            WE.Task -> WorkflowHistory.record_task(history, head.name) |> IO.inspect()
-            WE.Event -> WorkflowHistory.record_event(history, head.name) |> IO.inspect()
-          end
-
-        {:noreply, history, {workflow, history, data}, {:continue, {:step, tail}}}
+      stops ->
+        history = WorkflowHistory.record_event(history, Enum.at(stops, 0))
+        {:reply, history, {workflow, history, next_list}}
     end
-  end
-
-  @impl GenServer
-  def handle_continue(:task, {workflow, state}) do
   end
 
   # client
@@ -72,11 +69,30 @@ defmodule WE.Engine do
     GenServer.start_link(__MODULE__, workflow)
   end
 
-  def start(server, data \\ %{}) do
-    GenServer.call(server, {:start, data})
+  @spec start_execution(atom() | pid() | {atom(), any()} | {:via, atom(), any()}) :: any()
+  def start_execution(engine) do
+    GenServer.call(engine, :start)
   end
 
-  def completeStep(server, data) do
-    GenServer.call(server, {:complete, data})
+  def message_event(engine, event, sequenceflows \\ []) do
+    GenServer.call(engine, {:message_event, event, sequenceflows})
+  end
+
+  def start_task(engine, task) do
+    GenServer.call(engine, {:start_task, task})
+  end
+
+  def complete_task(engine, task, sequenceflows \\ []) do
+    GenServer.call(engine, {:complete_task, task, sequenceflows})
+  end
+
+  @spec current_state(pid()) :: any()
+  def current_state(engine) do
+    GenServer.call(engine, :current_state)
+  end
+
+  @spec history(pid()) :: any()
+  def history(engine) do
+    GenServer.call(engine, :history)
   end
 end

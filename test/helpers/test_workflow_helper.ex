@@ -55,16 +55,12 @@ defmodule WE.TestWorkflowHelper do
       |> Event.add_sequence_flow(SequenceFlow.default("start", "task"))
 
     task =
-      Task.task("task", &WE.TestWorkflowHelper.task_function(&1))
+      Task.task("task", [])
       |> Task.add_sequence_flow(SequenceFlow.default("task", "stop"))
 
     stop = Event.end_event("stop")
     workflow = Workflow.workflow("wf1", [start, task, stop])
     :ok = Workflow.validate(workflow)
     workflow
-  end
-
-  def task_function(data) do
-    IO.inspect(data)
   end
 end

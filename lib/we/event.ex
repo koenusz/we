@@ -1,24 +1,18 @@
 defmodule WE.Event do
   use TypedStruct
-  alias WE.{Event, SequenceFlow, Gateway}
+  alias WE.{Event, SequenceFlow}
 
-  typedstruct enforce: true, opaque: true do
+  @type event_type :: :start | :end | :message
+
+  typedstruct enforce: true do
     field :name, String.t()
     field :sequence_flows, list(SequenceFlow.t())
-    field :type, atom(), default: :message
-    field :gateway, Gateway.gateway(), default: :none
+    field :type, event_type(), default: :message
   end
 
-  def sequence_flows do
-  end
-
-  def receive_message(message, link \\ default) do
-  end
-
-  @spec next(Event.t(), term()) :: :error | {:ok, [SequenceFlow.t()]}
-  def next(event, data) do
-    args = [event.sequence_flows, [], data]
-    apply(Gateway, event.gateway, args)
+  @spec next(Event.t()) :: :error | [SequenceFlow.t()]
+  def next(event) do
+    event.sequence_flows
   end
 
   def start_event(name, sequence_flows) do
