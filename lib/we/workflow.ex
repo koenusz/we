@@ -4,6 +4,7 @@ defmodule WE.Workflow do
   typedstruct enforce: true do
     field :name, String.t()
     field :steps, list(Task.t() | Event.t())
+    field :documents, list({String.t(), String.t()}), default: []
   end
 
   alias WE.{Workflow, Event, Task, Step, SequenceFlow}
@@ -28,7 +29,7 @@ defmodule WE.Workflow do
     |> Enum.filter(fn step -> step.type == :end end)
   end
 
-  @spec get_next_steps_by_sequenceflows(Workflow.t(), [SequenceFlow.t()], %Task{}) ::
+  @spec get_next_steps_by_sequenceflows(Workflow.t(), [SequenceFlow.t()], %Task{} | %Event{}) ::
           [Task.t() | Event.t()]
   def get_next_steps_by_sequenceflows(workflow, sequenceflows, task) do
     case sequenceflows do
@@ -51,54 +52,35 @@ defmodule WE.Workflow do
     |> Enum.find(:error, fn step -> step.name == name end)
   end
 
+  @spec get_document(Workflow.t(), String.t()) :: WE.Document.t()
+  def get_document(workflow, document_id) do
+    workflow.documents
+    |> Enum.find({:error, "not found"}, fn doc -> doc.id == document_id end)
+  end
+
+  @spec get_documents(Workflow.t()) :: [WE.Document.t()]
+  def get_documents(workflow) do
+    workflow.documents
+  end
+
+  # create workflow
   @spec workflow(String.t(), list(%Task{} | %Event{})) :: WE.Workflow.t()
   def workflow(name, steps) do
     %Workflow{name: name, steps: steps}
   end
 
-  @spec validate(Workflow.t()) :: :ok | [{:error, String.t()}]
-  def validate(workflow) do
-    result =
-      []
-      |> has_start?(workflow)
-      |> has_end?(workflow)
-      |> Enum.reject(fn item -> item == :ok end)
-
-    case result do
-      [] -> :ok
-      x -> x
-    end
+  @spec add_step(Workflow.t(), Task.t() | Event.t()) :: Workflow.t()
+  def add_step(workflow, step) do
+    %{workflow | steps: [step, workflow.steps]}
   end
 
-  defp has_start?(list, workflow) do
-    test =
-      workflow.steps
-      |> Enum.map(&Map.get(&1, :type))
-      |> Enum.member?(:start)
-
-    if test do
-      [:ok | list]
-    else
-      [{:error, "has no start event"} | list]
-    end
+  @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t()
+  def add_document(workflow, document, step_name) do
+    %{workflow | documents: [{WE.Document.document_id(document), step_name}, workflow.documents]}
   end
 
-  defp has_end?(list, workflow) do
-    test =
-      workflow.steps
-      |> Enum.map(&Map.get(&1, :type))
-      |> Enum.member?(:end)
-
-    if test do
-      [:ok | list]
-    else
-      [{:error, "has no end event"} | list]
-    end
+  @spec add_document(Workflow.t(), WE.Document.t()) :: Workflow.t()
+  def add_document(workflow, document) do
+    %{workflow | documents: [WE.Document.document_id(document), workflow.documents]}
   end
-
-  # defp step_names_unique?() do
-  # end
-
-  # defp each_step_has_default_sequence_flow() do
-  # end
 end

@@ -8,9 +8,9 @@ defmodule WE.Engine do
   end
 
   @impl GenServer
-  @spec init(%Workflow{}, any()) :: {:ok, {%Workflow{}, any()}}
-  def init(workflow, _opts \\ []) do
-    {:ok, {workflow, WorkflowHistory.init(workflow.name)}}
+  @spec init({Workflow.t(), [module()]}, any()) :: {:ok, {Workflow.t(), any()}}
+  def init({workflow, storage_providers}, _opts \\ []) do
+    {:ok, {workflow, WorkflowHistory.init(workflow.name, storage_providers)}}
   end
 
   @impl GenServer
@@ -91,8 +91,10 @@ defmodule WE.Engine do
 
   # client
 
-  def start_link(workflow) do
-    GenServer.start_link(__MODULE__, workflow)
+  @spec start_link(WE.Workflow.t(), [WE.StorageProvider.t()]) ::
+          :ignore | {:error, any()} | {:ok, pid()}
+  def start_link(workflow, storage_providers \\ []) do
+    GenServer.start_link(__MODULE__, {workflow, storage_providers})
   end
 
   @spec start_execution(atom() | pid() | {atom(), any()} | {:via, atom(), any()}) :: any()

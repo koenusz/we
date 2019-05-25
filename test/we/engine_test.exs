@@ -1,5 +1,5 @@
 defmodule WE.EngineTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias WE.{Workflow, Task, Engine, TestWorkflowHelper}
 

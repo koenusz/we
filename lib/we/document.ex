@@ -1,17 +1,62 @@
-defmodule WE.Docucument do
-  def add(_engine, _document) do
-    :ok
+defmodule WE.Document do
+  use TypedStruct
+
+  typedstruct enforde: true, opaque: true do
+    field :id, String.t(), default: UUID.uuid1()
+    field :data, map()
+    field :optional?, boolean, default: false
+    field :status, document_status(), default: :complete
   end
 
-  def remove(_engine, _document) do
-    :ok
+  @type document_status :: :complete | :incomplete
+
+  @spec document(map()) :: WE.Document.t()
+  def document(%{} = data) do
+    %WE.Document{data: data}
   end
 
-  def find(_engine, _docment_id) do
-    :ok
+  @spec optional_document(map(), atom()) :: WE.Document.t()
+  def optional_document(%{} = data, workflow_stage) when is_atom(workflow_stage) do
+    %WE.Document{data: data, optional?: true}
   end
 
-  def find_all(_engine) do
-    :ok
+  @spec document_id(WE.Document.t()) :: String.t()
+  def document_id(%WE.Document{} = doc) do
+    doc.id
+  end
+
+  @spec document_is_optional?(WE.Document.t()) :: boolean
+  def document_is_optional?(%WE.Document{} = doc) do
+    doc.optional?
+  end
+
+  @spec document_is_complete?(WE.Document.t()) :: boolean
+  def document_is_complete?(%WE.Document{} = doc) do
+    doc.status == :complete
+  end
+
+  @spec set_document_is_complete(WE.Document.t()) :: WE.Document.t()
+  def set_document_is_complete(%WE.Document{} = doc) do
+    %{doc | status: :complete}
+  end
+
+  @spec set_document_is_incomplete(WE.Document.t()) :: WE.Document.t()
+  def set_document_is_incomplete(%WE.Document{} = doc) do
+    %{doc | status: :incomplete}
+  end
+
+  @spec same_id?(WE.Document.t(), WE.Document.t()) :: boolean
+  def same_id?(%WE.Document{} = doc1, %WE.Document{} = doc2) do
+    doc1.id == doc2.id
+  end
+end
+
+defmodule WE.DocumentDefinition do
+  use TypedStruct
+
+  typedstruct enforce: true do
+    field :name, String.t()
+    field :optional, boolean, default: false
+    field :attached_to, WE.Task.t() | WE.Event.t(), enforce: false
   end
 end

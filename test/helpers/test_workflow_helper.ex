@@ -10,7 +10,7 @@ defmodule WE.TestWorkflowHelper do
 
     stop = Event.end_event("stop")
     workflow = Workflow.workflow("test1", [start, stop])
-    :ok = Workflow.validate(workflow)
+    :ok = WE.WorkflowValidator.validate(workflow)
     workflow
   end
 
@@ -25,7 +25,7 @@ defmodule WE.TestWorkflowHelper do
 
     stop = Event.end_event("stop")
     workflow = Workflow.workflow("wf1", [start, message, stop])
-    :ok = Workflow.validate(workflow)
+    :ok = WE.WorkflowValidator.validate(workflow)
     workflow
   end
 
@@ -45,7 +45,7 @@ defmodule WE.TestWorkflowHelper do
 
     stop = Event.end_event("stop")
     workflow = Workflow.workflow("wf1", [start, message1, message2, stop])
-    :ok = Workflow.validate(workflow)
+    :ok = WE.WorkflowValidator.validate(workflow)
     workflow
   end
 
@@ -60,7 +60,7 @@ defmodule WE.TestWorkflowHelper do
 
     stop = Event.end_event("stop")
     workflow = Workflow.workflow("wf1", [start, task, stop])
-    :ok = Workflow.validate(workflow)
+    :ok = WE.WorkflowValidator.validate(workflow)
     workflow
   end
 end
