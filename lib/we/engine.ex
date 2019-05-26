@@ -128,15 +128,15 @@ defmodule WE.Engine do
     engine
   end
 
-  @spec current_state(pid()) :: pid
+  @spec current_state(pid()) :: {:ok, pid, term()}
   def current_state(engine) do
-    :ok = GenServer.call(engine, :current_state)
-    engine
+    {:ok, current_state} = GenServer.call(engine, :current_state)
+    {:ok, engine, current_state}
   end
 
-  @spec history(pid()) :: pid
+  @spec history(pid()) :: {:ok, pid, WE.WorkflowHistory.t()}
   def history(engine) do
-    :ok = GenServer.call(engine, :history)
-    engine
+    {:ok, history} = GenServer.call(engine, :history)
+    {:ok, engine, history}
   end
 end

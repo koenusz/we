@@ -43,6 +43,7 @@ defmodule WE.DocumentTest do
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
         |> WE.Engine.current_state()
+        |> elem(2)
 
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
     end
