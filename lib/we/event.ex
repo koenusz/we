@@ -4,11 +4,35 @@ defmodule WE.Event do
 
   @type event_type :: :start | :end | :message
 
-  typedstruct enforce: true do
+  typedstruct enforce: true, opaque: true do
     field :name, String.t()
     field :sequence_flows, list(SequenceFlow.t())
     field :type, event_type(), default: :message
   end
+
+  # accessors
+
+  @spec event_in?([Task.t() | WE.Event.t()], Event.t()) :: boolean
+  def event_in?(list, event) do
+    list
+    |> Enum.find(false, fn step ->
+      if step.__struct__ == WE.Event and same_name?(step, event) do
+        true
+      end
+    end)
+  end
+
+  @spec same_name?(Event.t(), Event.t()) :: boolean
+  def same_name?(event1, event2) do
+    event1.name == event2.name
+  end
+
+  @spec name(Event.t()) :: String.t()
+  def name(event) do
+    event.name
+  end
+
+  # construction
 
   @spec next(Event.t()) :: :error | [SequenceFlow.t()]
   def next(event) do

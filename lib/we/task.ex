@@ -5,12 +5,41 @@ defmodule WE.Task do
 
   @type task_type :: :service | :human
 
-  typedstruct enforce: true do
+  typedstruct enforce: true, opaque: true do
     field :name, String.t()
     field :sequence_flows, list(SequenceFlow.t())
     field :type, task_type(), default: :service
     field :started, boolean, default: false
   end
+
+  # accessors
+
+  @spec task_in?([Task.t() | WE.Event.t()], Task.t()) :: boolean
+  def task_in?(list, task) do
+    list
+    |> Enum.find(false, fn step ->
+      if step.__struct__ == WE.Task and same_name?(step, task) do
+        true
+      end
+    end)
+  end
+
+  @spec same_name?(Task.t(), Task.t()) :: boolean
+  def same_name?(task1, task2) do
+    task1.name == task2.name
+  end
+
+  @spec name(Task.t()) :: String.t()
+  def name(task) do
+    task.name
+  end
+
+  @spec started(Task.t()) :: boolean
+  def started(task) do
+    task.started
+  end
+
+  # construction
 
   @spec start_task(Task.t()) :: Task.t()
   def start_task(task) do
@@ -45,7 +74,7 @@ defmodule WE.Task do
     event.sequence_flows(@spec task(String.t(), fun()) :: WE.Task.t())
   end
 
-  @spec add_sequence_flow(%Task{}, SequenceFlow.t()) :: Task.t()
+  @spec add_sequence_flow(Task.t(), SequenceFlow.t()) :: Task.t()
   def add_sequence_flow(task, sequence_flow) do
     %{task | sequence_flows: [sequence_flow | task.sequence_flows]}
   end

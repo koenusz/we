@@ -35,7 +35,7 @@ defmodule WE.WorkflowHistory do
   end
 
   @spec record_document(WorkflowHistory.t(), WE.Document.t()) :: WorkflowHistory.t()
-  def record_document(history, %WE.Document{} = doc) do
+  def record_document(history, doc) do
     record = WE.HistoryRecord.record_document(doc)
     update_records(history, record)
   end

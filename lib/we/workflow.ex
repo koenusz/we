@@ -1,7 +1,7 @@
 defmodule WE.Workflow do
   use TypedStruct
 
-  typedstruct enforce: true do
+  typedstruct enforce: true, opaque: true do
     field :name, String.t()
     field :steps, list(Task.t() | Event.t())
     field :documents, list({String.t(), String.t()}), default: []
@@ -9,13 +9,13 @@ defmodule WE.Workflow do
 
   alias WE.{Workflow, Event, Task, Step, SequenceFlow}
 
-  @spec get_start(%Workflow{}) :: %Event{} | :error
+  @spec get_start(WE.Workflow.t()) :: WE.Event.t() | :error
   def get_start(workflow) do
     workflow.steps
     |> Enum.find(:error, fn step -> step.type == :start end)
   end
 
-  @spec get_next(%Workflow{}, String.t()) :: [Task.t() | Event.t()]
+  @spec get_next(WE.Workflow.t(), String.t()) :: [Task.t() | Event.t()]
   def get_next(workflow, current_name) do
     workflow
     |> get_step_by_name(current_name)
@@ -29,7 +29,7 @@ defmodule WE.Workflow do
     |> Enum.filter(fn step -> step.type == :end end)
   end
 
-  @spec get_next_steps_by_sequenceflows(Workflow.t(), [SequenceFlow.t()], %Task{} | %Event{}) ::
+  @spec get_next_steps_by_sequenceflows(Workflow.t(), [SequenceFlow.t()], Task.t() | Event.t()) ::
           [Task.t() | Event.t()]
   def get_next_steps_by_sequenceflows(workflow, sequenceflows, task) do
     case sequenceflows do
@@ -44,6 +44,11 @@ defmodule WE.Workflow do
         |> Enum.map(fn flow -> flow.to end)
         |> Enum.map(&get_step_by_name(workflow, &1))
     end
+  end
+
+  @spec get_task_by_name(Workflow.t(), String.t()) :: Task.t()
+  def get_task_by_name(workflow, name) do
+    get_step_by_name(workflow, name)
   end
 
   @spec get_step_by_name(Workflow.t(), String.t()) :: Task.t() | Event.t()
@@ -63,8 +68,13 @@ defmodule WE.Workflow do
     workflow.documents
   end
 
+  @spec name(WE.Workflow.t()) :: String.t()
+  def name(workflow) do
+    workflow.name
+  end
+
   # create workflow
-  @spec workflow(String.t(), list(%Task{} | %Event{})) :: WE.Workflow.t()
+  @spec workflow(String.t(), list(WE.Task.t() | WE.Event.t())) :: WE.Workflow.t()
   def workflow(name, steps) do
     %Workflow{name: name, steps: steps}
   end

@@ -8,16 +8,17 @@ defmodule WE.Engine do
   end
 
   @impl GenServer
-  @spec init({Workflow.t(), [module()]}, any()) :: {:ok, {Workflow.t(), any()}}
+  @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
+          {:ok, {WE.Workflow.t(), WE.WorkflowHistory.t()}}
   def init({workflow, storage_providers}, _opts \\ []) do
-    {:ok, {workflow, WorkflowHistory.init(workflow.name, storage_providers)}}
+    {:ok, {workflow, WorkflowHistory.init(WE.Workflow.name(workflow), storage_providers)}}
   end
 
   @impl GenServer
   def handle_call(:start, _from, {workflow, history}) do
     event = Workflow.get_start(workflow)
     history = WorkflowHistory.record_event(history, event)
-    next_list = Workflow.get_next(workflow, event.name)
+    next_list = Workflow.get_next(workflow, WE.Event.name(event))
     reply_or_end({workflow, history, next_list})
   end
 
@@ -27,8 +28,10 @@ defmodule WE.Engine do
   end
 
   @impl GenServer
-  def handle_call({:start_task, task}, _from, {workflow, history, current}) do
-    if Enum.member?(current, task) and !task.started do
+  def handle_call({:start_task, task_name}, _from, {workflow, history, current}) do
+    task = Workflow.get_step_by_name(workflow, task_name)
+
+    if Enum.member?(current, task) and not WE.Task.started(task) do
       current =
         current
         |> Enum.map(fn step ->
@@ -47,8 +50,12 @@ defmodule WE.Engine do
   end
 
   @impl GenServer
-  def handle_call({:complete_task, task, sequenceflows}, _from, {workflow, history, current}) do
-    if Enum.member?(current, task) do
+  def handle_call({:complete_task, task_name, sequenceflows}, _from, {workflow, history, current}) do
+    task = Workflow.get_task_by_name(workflow, task_name)
+    IO.inspect(current)
+    IO.inspect(task)
+
+    if WE.Task.task_in?(current, task) do
       history = WorkflowHistory.record_task_complete(history, task)
       next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)
       reply_or_end({workflow, history, next_list})
@@ -59,7 +66,7 @@ defmodule WE.Engine do
 
   @impl GenServer
   def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, current}) do
-    if Enum.member?(current, event) do
+    if WE.Event.event_in?(current, event) do
       history = WorkflowHistory.record_event(history, event)
       next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)
       reply_or_end({workflow, history, next_list})
@@ -97,30 +104,39 @@ defmodule WE.Engine do
     GenServer.start_link(__MODULE__, {workflow, storage_providers})
   end
 
-  @spec start_execution(atom() | pid() | {atom(), any()} | {:via, atom(), any()}) :: any()
+  @spec start_execution(pid) :: pid
   def start_execution(engine) do
-    GenServer.call(engine, :start)
+    :ok = GenServer.call(engine, :start)
+    engine
   end
 
+  @spec message_event(pid, Event.t(), [WE.SequenceFlow.t()]) :: pid
   def message_event(engine, event, sequenceflows \\ []) do
-    GenServer.call(engine, {:message_event, event, sequenceflows})
+    :ok = GenServer.call(engine, {:message_event, event, sequenceflows})
+    engine
   end
 
+  @spec start_task(pid, String.t()) :: pid
   def start_task(engine, task) do
-    GenServer.call(engine, {:start_task, task})
+    :ok = GenServer.call(engine, {:start_task, task})
+    engine
   end
 
+  @spec complete_task(pid, String.t(), [WE.SequenceFlow.t()]) :: pid
   def complete_task(engine, task, sequenceflows \\ []) do
-    GenServer.call(engine, {:complete_task, task, sequenceflows})
+    :ok = GenServer.call(engine, {:complete_task, task, sequenceflows})
+    engine
   end
 
-  @spec current_state(pid()) :: any()
+  @spec current_state(pid()) :: pid
   def current_state(engine) do
-    GenServer.call(engine, :current_state)
+    :ok = GenServer.call(engine, :current_state)
+    engine
   end
 
-  @spec history(pid()) :: any()
+  @spec history(pid()) :: pid
   def history(engine) do
-    GenServer.call(engine, :history)
+    :ok = GenServer.call(engine, :history)
+    engine
   end
 end

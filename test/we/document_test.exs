@@ -1,10 +1,13 @@
 defmodule WE.DocumentTest do
   use ExUnit.Case, async: true
 
-  describe "definition phase" do
-    test "add a document to a workflow" do
-      thedoc = WE.Document.document(%{data: "bla"})
+  setup thedoc do
+    WE.Document.document(%{data: "bla"})
+    :ok
+  end
 
+  describe "definition phase" do
+    test "add a document to a workflow", thedoc do
       workflow =
         WE.TestWorkflowHelper.start_stop()
         |> WE.Workflow.add_document(thedoc)
@@ -14,9 +17,7 @@ defmodule WE.DocumentTest do
       assert documents == [thedoc.id, []]
     end
 
-    test "add a document to a s step in a workflow" do
-      thedoc = WE.Document.document(%{data: "bla"})
-
+    test "add a document to a step in a workflow", thedoc do
       workflow =
         WE.TestWorkflowHelper.start_stop()
         |> WE.Workflow.add_document(thedoc, "start")
@@ -28,8 +29,22 @@ defmodule WE.DocumentTest do
   end
 
   describe "execution phase" do
-    test "complete a task with an optional document" do
-      assert false
+    test "complete a task with an optional document", thedoc do
+      document = WE.Document.optional_document(%{data: "optional"})
+
+      workflow =
+        WE.TestWorkflowHelper.task()
+        |> WE.Workflow.add_document(document, "task")
+
+      current_state =
+        WE.Engine.start_link(workflow)
+        |> elem(1)
+        |> WE.Engine.start_execution()
+        |> WE.Engine.start_task("task")
+        |> WE.Engine.complete_task("task")
+        |> WE.Engine.current_state()
+
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
     end
 
     test "complete a task with a required document" do

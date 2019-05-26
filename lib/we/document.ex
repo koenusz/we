@@ -15,8 +15,8 @@ defmodule WE.Document do
     %WE.Document{data: data}
   end
 
-  @spec optional_document(map(), atom()) :: WE.Document.t()
-  def optional_document(%{} = data, workflow_stage) when is_atom(workflow_stage) do
+  @spec optional_document(map()) :: WE.Document.t()
+  def optional_document(%{} = data) do
     %WE.Document{data: data, optional?: true}
   end
 
