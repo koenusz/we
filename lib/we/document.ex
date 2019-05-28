@@ -49,6 +49,16 @@ defmodule WE.Document do
   def same_id?(%WE.Document{} = doc1, %WE.Document{} = doc2) do
     doc1.id == doc2.id
   end
+
+  @spec has_id?(WE.Document.t(), String.t()) :: boolean
+  def has_id?(%WE.Document{} = doc, document_id) do
+    doc.id == document_id
+  end
+
+  def find(documents, document_id) do
+    documents
+    |> Enum.find({:error, "not found"}, fn doc -> has_id?(dic, document_id) end)
+  end
 end
 
 defmodule WE.DocumentDefinition do

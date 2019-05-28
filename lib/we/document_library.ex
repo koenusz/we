@@ -18,6 +18,17 @@ defmodule WE.DocumentLibrary do
   end
 
   @impl GenServer
+  def handle_call({:get, document_id}, _from, {workflow, documents, storage_providers}) do
+    response =
+      case storage_providers do
+        [] -> {:error, "no storage providers"}
+        [h | _t] -> {:ok, h.find_document(document_id)}
+      end
+
+    {:reply, response, {workflow, documents, storage_providers}}
+  end
+
+  @impl GenServer
   def handle_call({:update, document}, _from, {workflow, documents, storage_providers}) do
     storage_providers
     |> Enum.each(fn pr -> pr.update_document(document) end)
@@ -40,5 +51,10 @@ defmodule WE.DocumentLibrary do
   @spec update_document(pid, WE.Document.t()) :: {:ok, any()}
   def update_document(library, document) do
     GenServer.call(library, {:update, document})
+  end
+
+  @spec get_document(pid, String.t()) :: {:ok, WE.Document.t()} | {:error, String.t()}
+  def get_document(library, document_id) do
+    GenServer.call(library, {:get, document_id})
   end
 end

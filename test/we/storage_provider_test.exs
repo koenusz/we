@@ -1,4 +1,4 @@
-defmodule WE.DocumentTest do
+defmodule WE.StorageProviderTest do
   use ExUnit.Case, async: true
 
   test "store a history record" do

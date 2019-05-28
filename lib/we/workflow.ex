@@ -73,6 +73,9 @@ defmodule WE.Workflow do
     workflow.name
   end
 
+  def all_required_documents_present? (workflow, step) do
+  end
+
   # create workflow
   @spec workflow(String.t(), list(WE.Task.t() | WE.Event.t())) :: WE.Workflow.t()
   def workflow(name, steps) do

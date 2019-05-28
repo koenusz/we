@@ -5,27 +5,38 @@ defmodule WE.HistoryRecord do
 
   typedstruct enforce: true, opaque: true do
     field :time, DateTime.t(), default: DateTime.utc_now()
-    field :step, String.t()
+    field :id, String.t()
     field :type, record_type()
+    field :message, String.t(), enforce: false
   end
 
   @spec record_task_start(WE.Task.t()) :: WE.HistoryRecord.t()
   def record_task_start(task) do
-    %WE.HistoryRecord{step: WE.Task.name(task), type: :task_start}
+    %WE.HistoryRecord{id: WE.Task.name(task), type: :task_start}
   end
 
   @spec record_task_complete(WE.Task.t()) :: WE.HistoryRecord.t()
   def record_task_complete(task) do
-    %WE.HistoryRecord{step: WE.Task.name(task), type: :task_complete}
+    %WE.HistoryRecord{id: WE.Task.name(task), type: :task_complete}
   end
 
   @spec record_event(WE.Event.t()) :: WE.HistoryRecord.t()
   def record_event(event) do
-    %WE.HistoryRecord{step: WE.Event.name(event), type: :event}
+    %WE.HistoryRecord{id: WE.Event.name(event), type: :event}
   end
 
   @spec record_document(WE.Document.t()) :: WE.HistoryRecord.t()
   def record_document(doc) do
-    %WE.HistoryRecord{step: WE.Document.document_id(doc), type: :document}
+    %WE.HistoryRecord{id: WE.Document.document_id(doc), type: :document}
+  end
+
+  @spec record_error(WE.Task.t(), String.t()) :: WE.HistoryRecord.t()
+  def record_error(%WE.Task{} = task, message) do
+    %WE.HistoryRecord{id: WE.Task.name(task), message: message, type: :error}
+  end
+
+  @spec record_error(WE.Event.t(), String.t()) :: WE.HistoryRecord.t()
+  def record_error(%WE.Event{} = event, message) do
+    %WE.HistoryRecord{id: WE.Event.name(event), message: message, type: :error}
   end
 end

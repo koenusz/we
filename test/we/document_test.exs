@@ -1,35 +1,34 @@
 defmodule WE.DocumentTest do
   use ExUnit.Case, async: true
 
-  setup thedoc do
-    WE.Document.document(%{data: "bla"})
-    :ok
-  end
-
   describe "definition phase" do
-    test "add a document to a workflow", thedoc do
+    test "add a document to a workflow" do
+      required = WE.Document.document(%{data: "bla"})
+
       workflow =
         WE.TestWorkflowHelper.start_stop()
-        |> WE.Workflow.add_document(thedoc)
+        |> WE.Workflow.add_document(required)
 
       documents = WE.Workflow.get_documents(workflow)
 
-      assert documents == [thedoc.id, []]
+      assert documents == [required.id, []]
     end
 
-    test "add a document to a step in a workflow", thedoc do
+    test "add a document to a step in a workflow" do
+      required = WE.Document.document(%{data: "bla"})
+
       workflow =
         WE.TestWorkflowHelper.start_stop()
-        |> WE.Workflow.add_document(thedoc, "start")
+        |> WE.Workflow.add_document(required, "start")
 
       documents = WE.Workflow.get_documents(workflow)
 
-      assert documents == [{thedoc.id, "start"}, []]
+      assert documents == [{required.id, "start"}, []]
     end
   end
 
   describe "execution phase" do
-    test "complete a task with an optional document", thedoc do
+    test "complete a task with an optional document" do
       document = WE.Document.optional_document(%{data: "optional"})
 
       workflow =
@@ -49,11 +48,60 @@ defmodule WE.DocumentTest do
     end
 
     test "complete a task with a required document" do
-      assert false
+      document = WE.Document.document(%{data: "required"})
+
+      workflow =
+        WE.TestWorkflowHelper.task()
+        |> WE.Workflow.add_document(document, "task")
+
+      current_state =
+        WE.Engine.start_link(workflow)
+        |> elem(1)
+        |> WE.Engine.start_execution()
+        |> WE.Engine.start_task("task")
+        |> WE.Engine.complete_task("task")
+        |> WE.Engine.current_state()
+        |> elem(2)
+
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
     end
 
-    test "complete a task with a required document and the optional document missing" do
-      assert false
+    test "complete a task with the optional document missing" do
+      document = WE.Document.optional_document(%{data: "optional"})
+
+      workflow =
+        WE.TestWorkflowHelper.task()
+        |> WE.Workflow.add_document(document, "task")
+
+      current_state =
+        WE.Engine.start_link(workflow)
+        |> elem(1)
+        |> WE.Engine.start_execution()
+        |> WE.Engine.start_task("task")
+        |> WE.Engine.complete_task("task")
+        |> WE.Engine.current_state()
+        |> elem(2)
+
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
+    end
+
+    test "complete a task with a required document missing" do
+      document = WE.Document.document(%{data: "required"})
+
+      workflow =
+        WE.TestWorkflowHelper.task()
+        |> WE.Workflow.add_document(document, "task")
+
+      current_state =
+        WE.Engine.start_link(workflow)
+        |> elem(1)
+        |> WE.Engine.start_execution()
+        |> WE.Engine.start_task("task")
+        |> WE.Engine.complete_task("task")
+        |> WE.Engine.current_state()
+        |> elem(2)
+
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "task")]
     end
 
     test "find document by stage" do
