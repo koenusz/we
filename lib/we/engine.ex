@@ -53,7 +53,7 @@ defmodule WE.Engine do
   def handle_call({:complete_task, task_name, sequenceflows}, _from, {workflow, history, current}) do
     task = Workflow.get_task_by_name(workflow, task_name)
 
-    if task.if(WE.Task.task_in?(current, task)) do
+    if WE.Task.task_in?(current, task) do
       history = WorkflowHistory.record_task_complete(history, task)
       next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)
       reply_or_end({workflow, history, next_list})

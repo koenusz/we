@@ -55,9 +55,15 @@ defmodule WE.Document do
     doc.id == document_id
   end
 
+  @spec find([Document.t()], String.t()) :: Document.t()
   def find(documents, document_id) do
     documents
-    |> Enum.find({:error, "not found"}, fn doc -> has_id?(dic, document_id) end)
+    |> Enum.find({:error, "not found"}, fn doc -> has_id?(doc, document_id) end)
+  end
+
+  @spec update_data(Document.t(), term()) :: Document.t()
+  def update_data(document, data) do
+    %{document | data: data}
   end
 end
 

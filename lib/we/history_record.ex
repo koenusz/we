@@ -1,5 +1,6 @@
 defmodule WE.HistoryRecord do
   use TypedStruct
+  @dialyzer {:nowarn_function, record_error: 2}
 
   @type record_type :: :task_start | :task_complete | :event | :document | :error
 

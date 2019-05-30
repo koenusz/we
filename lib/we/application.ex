@@ -18,8 +18,9 @@ defmodule WE.Application do
     # add an in memory storage provider in case none are defined.
     children =
       case storage_providers do
-        [] -> [{WE.InMemoryStorage, []} | children]
-        _ -> children
+        [] ->
+          [{WE.InMemoryStorage, []} | children]
+          # _ -> children
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

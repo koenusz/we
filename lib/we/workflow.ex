@@ -73,7 +73,7 @@ defmodule WE.Workflow do
     workflow.name
   end
 
-  def all_required_documents_present? (workflow, step) do
+  def all_required_documents_present?(workflow, step) do
   end
 
   # create workflow
