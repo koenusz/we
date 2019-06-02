@@ -51,14 +51,18 @@ defmodule WE.EngineTest do
     Engine.start_task(engine, task)
     :ok = Engine.complete_task(engine, task, Task.flow_to(task, ["stop"]))
 
-    {:ok, history} =
-      Engine.history(engine)
-      |> IO.inspect()
+    {:ok, history} = Engine.history(engine)
 
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
     assert {:ok, [%WE.Event{name: "stop", sequence_flows: [], type: :end}]} ==
              Engine.current_state(engine)
+  end
+
+  test "received event, error not in current state" do
+  end
+
+  test "received task, error not in current state" do
   end
 end

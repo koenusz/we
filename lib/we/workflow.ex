@@ -4,7 +4,10 @@ defmodule WE.Workflow do
   typedstruct enforce: true, opaque: true do
     field :name, String.t()
     field :steps, list(Task.t() | Event.t())
-    field :documents, list({String.t(), String.t()}), default: []
+
+    field :documents,
+          list({String.t(), WE.Document.document_type(), String.t()}),
+          default: []
   end
 
   alias WE.{Workflow, Event, Task, Step, SequenceFlow}
@@ -73,7 +76,65 @@ defmodule WE.Workflow do
     workflow.name
   end
 
-  def all_required_documents_present?(workflow, step) do
+  @spec all_document_ids_for_task(WE.Workflow.t(), WE.Task.t()) :: [UUID.t()]
+  def all_document_ids_for_task(workflow, task) do
+    workflow.documents
+    |> Enum.filter(fn doc ->
+      {_, _, step_name} = doc
+      step_name == WE.Task.name(task)
+    end)
+    |> Enum.map(fn doc ->
+      {document_id, _, _} = doc
+      document_id
+    end)
+  end
+
+  @spec all_document_ids_for_event(WE.Workflow.t(), WE.Event.t()) :: [UUID.t()]
+  def all_document_ids_for_event(workflow, event) do
+    workflow.documents
+    |> Enum.filter(fn doc ->
+      {_, _, step_name} = doc
+      step_name == WE.Event.name(event)
+    end)
+    |> Enum.map(fn doc ->
+      {document_id, _, _} = doc
+      document_id
+    end)
+  end
+
+  @spec all_required_document_ids(WE.Workflow.t()) :: [UUID.t()]
+  def all_required_document_ids(workflow) do
+    workflow.documents
+    |> Enum.filter(fn doc ->
+      {_, _, document_type} = doc
+      document_type == :required
+    end)
+  end
+
+  @spec all_required_document_ids_for_event(WE.Workflow.t(), WE.Event.t()) :: [UUID.t()]
+  def all_required_document_ids_for_event(workflow, event) do
+    workflow.documents
+    |> Enum.filter(fn doc ->
+      {_, _, document_type} = doc
+      document_type == :required
+    end)
+    |> Enum.filter(fn doc ->
+      {_, _, step_name} = doc
+      step_name == WE.Event.name(event)
+    end)
+  end
+
+  @spec all_required_document_ids_for_task(WE.Workflow.t(), WE.Task.t()) :: [UUID.t()]
+  def all_required_document_ids_for_task(workflow, task) do
+    workflow.documents
+    |> Enum.filter(fn doc ->
+      {_, _, document_type} = doc
+      document_type == :required
+    end)
+    |> Enum.filter(fn doc ->
+      {_, _, step_name} = doc
+      step_name == WE.Task.name(task)
+    end)
   end
 
   # create workflow
@@ -89,11 +150,23 @@ defmodule WE.Workflow do
 
   @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t()
   def add_document(workflow, document, step_name) do
-    %{workflow | documents: [{WE.Document.document_id(document), step_name}, workflow.documents]}
+    %{
+      workflow
+      | documents: [
+          {WE.Document.document_id(document), WE.Document.document_type(document), step_name}
+          | workflow.documents
+        ]
+    }
   end
 
   @spec add_document(Workflow.t(), WE.Document.t()) :: Workflow.t()
   def add_document(workflow, document) do
-    %{workflow | documents: [WE.Document.document_id(document), workflow.documents]}
+    %{
+      workflow
+      | documents: [
+          {WE.Document.document_id(document), WE.Document.document_type(document), ""}
+          | workflow.documents
+        ]
+    }
   end
 end

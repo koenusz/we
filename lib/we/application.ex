@@ -8,16 +8,18 @@ defmodule WE.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
 
-    storage_providers = []
+    storage_adapters = []
 
     children = [
       # Starts a worker by calling: WE.Worker.start_link(arg)
       # {WE.Worker, arg}
+      {Registry, [keys: :unique, name: :document_registry]},
+      WE.DocumentSupervisor
     ]
 
     # add an in memory storage provider in case none are defined.
     children =
-      case storage_providers do
+      case storage_adapters do
         [] ->
           [{WE.InMemoryStorage, []} | children]
           # _ -> children

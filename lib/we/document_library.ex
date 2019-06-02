@@ -2,34 +2,144 @@ defmodule WE.DocumentLibrary do
   use GenServer
   use TypedStruct
 
+  @document_registry_name :document_registry
+
+  # client
+  @spec store_document(String.t(), WE.Document.t()) :: {:ok, any()}
+  def store_document(history_id, document) do
+    GenServer.call(via_tuple(history_id), {:store, document})
+  end
+
+  @spec update_document(String.t(), WE.Document.t()) :: {:ok, any()}
+  def update_document(history_id, document) do
+    GenServer.call(via_tuple(history_id), {:update, document})
+  end
+
+  @spec get_document(String.t(), String.t()) :: {:ok, WE.Document.t()} | {:error, String.t()}
+  def get_document(history_id, document_id) do
+    GenServer.call(via_tuple(history_id), {:get, document_id})
+  end
+
+  @spec all_documents_in(String.t(), [String.t()]) :: {:ok, [WE.Document.t()]}
+  def all_documents_in(history_id, document_ids) do
+    GenServer.call(via_tuple(history_id), {:get_all, document_ids})
+  end
+
+  @spec all_required_documents_present_for_event?(String.t(), String.t()) :: boolean
+  def all_required_documents_present_for_event?(history_id, step_name) do
+    GenServer.call(via_tuple(history_id), {:all_required_present_event, step_name})
+  end
+
+  @spec all_required_documents_present_for_task?(String.t(), String.t()) :: boolean
+  def all_required_documents_present_for_task?(history_id, step_name) do
+    GenServer.call(via_tuple(history_id), {:all_required_present_task, step_name})
+  end
+
+  @spec start_link({WE.WorkflowHistory.t(), WE.Workflow.t(), [atom]}) ::
+          :ignore | {:error, any} | {:ok, pid}
+  def start_link({history_id, workflow, storage_adapters}) do
+    GenServer.start_link(__MODULE__, {history_id, workflow, storage_adapters},
+      name: via_tuple(history_id)
+    )
+  end
+
+  # registry lookup handler
+  defp via_tuple(history_id), do: {:via, Registry, {@document_registry_name, history_id}}
+
   @impl GenServer
-  @spec init({WE.Workflow.t(), [module()]}, any()) ::
-          {:ok, {WE.Workflow.t(), list(WE.Document.t()), list(module())}}
-  def init({workflow, storage_providers}, _opts \\ []) do
-    {:ok, {workflow, [], storage_providers}}
+  @spec init({String.t(), WE.Workflow.t(), [module()]}, any()) ::
+          {:ok, {String.t(), WE.Workflow.t(), list(WE.Document.t()), list(module())}}
+  def init({history_id, workflow, storage_adapters}, _opts \\ []) do
+    {:ok, {history_id, workflow, [], storage_adapters}}
   end
 
   @impl GenServer
-  def handle_call({:store, document}, _from, {workflow, documents, storage_providers}) do
+  def handle_call(
+        {:all_required_present_event, step_name},
+        _from,
+        {history_id, workflow, documents, storage_providers}
+      ) do
+    present_docs =
+      documents
+      |> Enum.map(fn doc -> WE.Document.document_id(doc) end)
+
+    required_docs = WE.Workflow.all_required_document_ids_for_event(workflow, step_name)
+
+    {:reply, all_required_and_complete?(present_docs, required_docs, documents),
+     {history_id, workflow, documents, storage_providers}}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:all_required_present_task, step_name},
+        _from,
+        {history_id, workflow, documents, storage_providers}
+      ) do
+    present_docs =
+      documents
+      |> Enum.map(fn doc -> WE.Document.document_id(doc) end)
+
+    required_docs = WE.Workflow.all_required_document_ids_for_task(workflow, step_name)
+
+    {:reply, all_required_and_complete?(present_docs, required_docs, documents),
+     {history_id, workflow, documents, storage_providers}}
+  end
+
+  defp all_required_and_complete?(present_docs, required_docs, documents) do
+    all_required_present? = [] == required_docs -- present_docs
+
+    all_complete? =
+      [] ==
+        required_docs
+        |> Enum.map(fn id ->
+          WE.Document.find(documents, id) |> WE.Document.document_is_complete?()
+        end)
+        |> IO.inspect()
+        |> Enum.filter(fn x -> not x end)
+
+    all_required_present? and all_complete?
+  end
+
+  @impl GenServer
+  def handle_call({:store, document}, _from, {history_id, workflow, documents, storage_providers}) do
     storage_providers
     |> Enum.each(fn pr -> pr.store_document(document) end)
 
-    {:reply, :ok, {workflow, [document, documents], storage_providers}}
+    {:reply, :ok, {history_id, workflow, [document | documents], storage_providers}}
   end
 
+  # todo perhaps we need a better strategy to get a document other than to just get the top adapter
   @impl GenServer
-  def handle_call({:get, document_id}, _from, {workflow, documents, storage_providers}) do
+  def handle_call(
+        {:get, document_id},
+        _from,
+        {history_id, workflow, documents, storage_providers}
+      ) do
     response =
       case storage_providers do
         [] -> {:error, "no storage providers"}
-        [h | _t] -> {:ok, h.find_document(document_id)}
+        [h | _t] -> h.find_document(document_id)
       end
 
-    {:reply, response, {workflow, documents, storage_providers}}
+    {:reply, response, {history_id, workflow, documents, storage_providers}}
   end
 
   @impl GenServer
-  def handle_call({:update, document}, _from, {workflow, documents, storage_providers}) do
+  def handle_call(
+        {:get_all, document_ids},
+        _from,
+        {history_id, workflow, documents, storage_providers}
+      ) do
+    response = get_all_in(storage_providers, document_ids)
+    {:reply, response, {history_id, workflow, documents, storage_providers}}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:update, document},
+        _from,
+        {history_id, workflow, documents, storage_providers}
+      ) do
     storage_providers
     |> Enum.each(fn pr -> pr.update_document(document) end)
 
@@ -39,22 +149,17 @@ defmodule WE.DocumentLibrary do
         not WE.Document.same_id?(doc, document)
       end)
 
-    {:reply, :ok, {workflow, [document, documents], storage_providers}}
+    {:reply, :ok, {history_id, workflow, [document, documents], storage_providers}}
   end
 
-  # client
-  @spec store_document(pid, WE.Document.t()) :: {:ok, any()}
-  def store_document(library, document) do
-    GenServer.call(library, {:store, document})
-  end
+  defp get_all_in(storage_providers, document_ids) do
+    case storage_providers do
+      [] ->
+        {:error, "no storage providers"}
 
-  @spec update_document(pid, WE.Document.t()) :: {:ok, any()}
-  def update_document(library, document) do
-    GenServer.call(library, {:update, document})
-  end
-
-  @spec get_document(pid, String.t()) :: {:ok, WE.Document.t()} | {:error, String.t()}
-  def get_document(library, document_id) do
-    GenServer.call(library, {:get, document_id})
+      [h | _t] ->
+        {:ok,
+         document_ids |> Enum.map(fn document_id -> h.find_document(document_id) |> elem(1) end)}
+    end
   end
 end

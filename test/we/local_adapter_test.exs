@@ -1,10 +1,6 @@
 defmodule WE.LocalAdapterTest do
   use ExUnit.Case, async: true
 
-  # setup do
-  #   [storage: WE.InMemoryStorage.start_link()]
-  # end
-
   test "store a document and find" do
     doc = WE.Document.document(%{})
 
@@ -36,9 +32,5 @@ defmodule WE.LocalAdapterTest do
     WE.Adapter.Local.store_history_record("test_id", record2)
 
     assert WE.Adapter.Local.find_all_history_records("test_id") == [record1, record2]
-  end
-
-  test "find all history records" do
-    assert false
   end
 end

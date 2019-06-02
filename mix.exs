@@ -8,7 +8,8 @@ defmodule WE.MixProject do
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      elixirc_paths: compiler_paths(Mix.env())
+      elixirc_paths: compiler_paths(Mix.env()),
+      dialyzer: [ignore_warnings: "test_workflow_helper.ex"]
     ]
   end
 

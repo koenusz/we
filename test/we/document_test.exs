@@ -1,6 +1,54 @@
 defmodule WE.DocumentTest do
   use ExUnit.Case, async: true
 
+  @history_id "123"
+
+  setup_all do
+    wf = WE.TestWorkflowHelper.start_stop()
+    WE.DocumentSupervisor.add_library("123", wf, [WE.Adapter.Local])
+    :ok
+  end
+
+  describe "registry" do
+    setup do
+      wf = WE.TestWorkflowHelper.start_stop()
+      doc = WE.Document.document(%{})
+      [wf: wf, doc: doc]
+    end
+
+    test "add library", wf do
+      {:ok, pid} = WE.DocumentSupervisor.add_library("1234", wf, [])
+      assert is_pid(pid)
+    end
+
+    test "add library same id", wf do
+      {:error, {:already_started, pid}} = WE.DocumentSupervisor.add_library("123", wf, [])
+      assert is_pid(pid)
+    end
+
+    test "store and find a document in the library", ctx do
+      WE.DocumentLibrary.store_document(@history_id, ctx.doc)
+
+      assert ctx.doc ==
+               WE.DocumentLibrary.get_document(@history_id, WE.Document.document_id(ctx.doc))
+               |> elem(1)
+    end
+
+    test "find with empty library" do
+      assert [error: "not found"] ==
+               WE.DocumentLibrary.all_documents_in(@history_id, ["not present"])
+               |> elem(1)
+    end
+
+    test "find library", ctx do
+      WE.DocumentLibrary.store_document(@history_id, ctx.doc)
+
+      assert [ctx.doc] ==
+               WE.DocumentLibrary.all_documents_in(@history_id, [WE.Document.document_id(ctx.doc)])
+               |> elem(1)
+    end
+  end
+
   describe "definition phase" do
     test "add a document to a workflow" do
       required = WE.Document.document(%{data: "bla"})
@@ -11,7 +59,7 @@ defmodule WE.DocumentTest do
 
       documents = WE.Workflow.get_documents(workflow)
 
-      assert documents == [required.id, []]
+      assert documents == [{required.id, :required, ""}]
     end
 
     test "add a document to a step in a workflow" do
@@ -23,7 +71,7 @@ defmodule WE.DocumentTest do
 
       documents = WE.Workflow.get_documents(workflow)
 
-      assert documents == [{required.id, "start"}, []]
+      assert documents == [{required.id, :required, "start"}]
     end
   end
 
@@ -104,16 +152,16 @@ defmodule WE.DocumentTest do
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "task")]
     end
 
-    test "find document by stage" do
-      assert false
-    end
+    # test "find document by stage" do
+    #   assert false
+    # end
 
-    test "list complete/incomplete documents for the workflow" do
-      assert false
-    end
+    # test "list complete/incomplete documents for the workflow" do
+    #   assert false
+    # end
 
-    test "check if a workflow has all required documents" do
-      assert false
-    end
+    # test "check if a workflow has all required documents" do
+    #   assert false
+    # end
   end
 end

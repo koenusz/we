@@ -1,10 +1,12 @@
 defmodule WE.Document do
   use TypedStruct
 
+  @type document_type :: :required | :optional
+
   typedstruct enforde: true, opaque: true do
     field :id, String.t(), default: UUID.uuid1()
     field :data, map()
-    field :optional?, boolean, default: false
+    field :type, document_type(), default: :required
     field :status, document_status(), default: :complete
   end
 
@@ -17,7 +19,7 @@ defmodule WE.Document do
 
   @spec optional_document(map()) :: WE.Document.t()
   def optional_document(%{} = data) do
-    %WE.Document{data: data, optional?: true}
+    %WE.Document{data: data, type: :optional}
   end
 
   @spec document_id(WE.Document.t()) :: String.t()
@@ -25,9 +27,19 @@ defmodule WE.Document do
     doc.id
   end
 
+  @spec document_type(WE.Document.t()) :: document_type()
+  def document_type(%WE.Document{} = doc) do
+    doc.type
+  end
+
+  @spec document_is_required?(WE.Document.t()) :: boolean
+  def document_is_required?(%WE.Document{} = doc) do
+    doc.type == :required
+  end
+
   @spec document_is_optional?(WE.Document.t()) :: boolean
   def document_is_optional?(%WE.Document{} = doc) do
-    doc.optional?
+    doc.type == :optional
   end
 
   @spec document_is_complete?(WE.Document.t()) :: boolean

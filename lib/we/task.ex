@@ -17,11 +17,7 @@ defmodule WE.Task do
   @spec task_in?([Task.t() | WE.Event.t()], Task.t()) :: boolean
   def task_in?(list, task) do
     list
-    |> Enum.find(false, fn step ->
-      if step.__struct__ == WE.Task and same_name?(step, task) do
-        true
-      end
-    end)
+    |> Enum.member?(task)
   end
 
   @spec same_name?(Task.t(), Task.t()) :: boolean

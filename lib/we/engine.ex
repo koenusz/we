@@ -10,15 +10,22 @@ defmodule WE.Engine do
   @impl GenServer
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
           {:ok, {WE.Workflow.t(), WE.WorkflowHistory.t()}}
-  def init({workflow, storage_providers}, _opts \\ []) do
-    {:ok, {workflow, WorkflowHistory.init(WE.Workflow.name(workflow), storage_providers)}}
+  def init({workflow, storage_adapters}, _opts \\ []) do
+    {:ok, {workflow, WorkflowHistory.init(workflow, storage_adapters)}}
   end
 
   @impl GenServer
   def handle_call(:start, _from, {workflow, history}) do
+    WE.DocumentSupervisor.add_library(
+      WE.WorkflowHistory.history_id(history),
+      workflow,
+      WE.WorkflowHistory.storage_adapters(history)
+    )
+
     event = Workflow.get_start(workflow)
     history = WorkflowHistory.record_event(history, event)
     next_list = Workflow.get_next(workflow, WE.Event.name(event))
+
     reply_or_end({workflow, history, next_list})
   end
 
@@ -31,46 +38,76 @@ defmodule WE.Engine do
   def handle_call({:start_task, task_name}, _from, {workflow, history, current}) do
     task = Workflow.get_step_by_name(workflow, task_name)
 
-    if Enum.member?(current, task) and not WE.Task.started(task) do
-      current =
-        current
-        |> Enum.map(fn step ->
-          if step == task do
-            WE.Task.start_task(step)
-          else
-            step
-          end
-        end)
+    history =
+      cond do
+        WE.Task.started(task) ->
+          WE.WorkflowHistory.record_task_error(history, task, "already started")
 
-      history = WorkflowHistory.record_task_start(history, task)
-      {:reply, :ok, {workflow, history, current}}
-    else
-      {:reply, {:error, "task not in current state"}, {workflow, history, current}}
-    end
+        not WE.Task.task_in?(current, task) ->
+          WE.WorkflowHistory.record_task_error(history, task, "task not in current state")
+
+        true ->
+          WorkflowHistory.record_task_start(history, task)
+      end
+
+    {:reply, :ok, {workflow, history, current}}
   end
 
   @impl GenServer
   def handle_call({:complete_task, task_name, sequenceflows}, _from, {workflow, history, current}) do
     task = Workflow.get_task_by_name(workflow, task_name)
 
-    if WE.Task.task_in?(current, task) do
-      history = WorkflowHistory.record_task_complete(history, task)
-      next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)
-      reply_or_end({workflow, history, next_list})
-    else
-      {:reply, {:error, "task not in current state"}, {workflow, history, current}}
-    end
+    {history, next_list} =
+      cond do
+        not WE.Task.task_in?(current, task) ->
+          {WE.WorkflowHistory.record_task_error(history, task, "task not in current state"),
+           current}
+
+        not WE.DocumentLibrary.all_required_documents_present_for_task?(
+          WE.WorkflowHistory.history_id(history),
+          WE.Task.name(task)
+        ) ->
+          {WE.WorkflowHistory.record_task_error(
+             history,
+             task,
+             "not all required documents present"
+           ), current}
+
+        true ->
+          {WorkflowHistory.record_task_complete(history, task),
+           Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)}
+      end
+
+    reply_or_end({workflow, history, next_list})
   end
 
   @impl GenServer
   def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, current}) do
-    if WE.Event.event_in?(current, event) do
-      history = WorkflowHistory.record_event(history, event)
-      next_list = Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)
-      reply_or_end({workflow, history, next_list})
-    else
-      {:reply, {:error, "event not in current state"}, {workflow, history, current}}
-    end
+    {history, next_list} =
+      cond do
+        not WE.Event.event_in?(current, event) ->
+          {WE.WorkflowHistory.record_event_error(
+             history,
+             event,
+             "event not in current state"
+           ), current}
+
+        not WE.DocumentLibrary.all_required_documents_present_for_event?(
+          WE.WorkflowHistory.history_id(history),
+          WE.Event.name(event)
+        ) ->
+          {WE.WorkflowHistory.record_event_error(
+             history,
+             event,
+             "not all required documents present"
+           ), current}
+
+        true ->
+          {WorkflowHistory.record_event(history, event),
+           Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)}
+      end
+
+    reply_or_end({workflow, history, next_list})
   end
 
   @impl GenServer
@@ -98,8 +135,8 @@ defmodule WE.Engine do
 
   @spec start_link(WE.Workflow.t(), [WE.StorageProvider.t()]) ::
           :ignore | {:error, any()} | {:ok, pid()}
-  def start_link(workflow, storage_providers \\ []) do
-    GenServer.start_link(__MODULE__, {workflow, storage_providers})
+  def start_link(workflow, storage_adapters \\ []) do
+    GenServer.start_link(__MODULE__, {workflow, storage_adapters})
   end
 
   @spec start_execution(pid) :: pid
