@@ -1,5 +1,6 @@
 defmodule WE.Engine do
   use GenServer
+  # todo move to gen statem
   use TypedStruct
   alias WE.{Workflow, WorkflowHistory}
 
