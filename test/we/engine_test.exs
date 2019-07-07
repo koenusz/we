@@ -1,7 +1,7 @@
 defmodule WE.EngineTest do
   use ExUnit.Case, async: true
 
-  alias WE.{Workflow, Task, Engine, TestWorkflowHelper}
+  alias WE.{Workflow, Engine, TestWorkflowHelper}
 
   test "start stop" do
     workflow = TestWorkflowHelper.start_stop()
@@ -32,7 +32,7 @@ defmodule WE.EngineTest do
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
-    assert {:ok, [%WE.Event{name: "stop", sequence_flows: [], type: :end}]} ==
+    assert {:ok, [%WE.State{name: "stop", sequence_flows: [], type: :end}]} ==
              Engine.current_state(engine)
   end
 
@@ -45,18 +45,18 @@ defmodule WE.EngineTest do
     |> Engine.start_execution()
 
     :ok = Engine.start_task(engine, task)
-    task = Task.start_task(task)
+    task = WE.State.start_task(task)
     assert {:ok, [task]} == Engine.current_state(engine)
 
     Engine.start_task(engine, task)
-    :ok = Engine.complete_task(engine, task, Task.flow_to(task, ["stop"]))
+    :ok = Engine.complete_task(engine, task, WE.State.flow_to(task, ["stop"]))
 
     {:ok, history} = Engine.history(engine)
 
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
-    assert {:ok, [%WE.Event{name: "stop", sequence_flows: [], type: :end}]} ==
+    assert {:ok, [%WE.State{name: "stop", sequence_flows: [], type: :end}]} ==
              Engine.current_state(engine)
   end
 

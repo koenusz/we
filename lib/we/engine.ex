@@ -5,7 +5,7 @@ defmodule WE.Engine do
   alias WE.{Workflow, WorkflowHistory}
 
   typedstruct enforce: true, opaque: true do
-    field :current, [Event.t() | Task.t()]
+    field :current, [State.t() | State.t()]
   end
 
   @impl GenServer
@@ -24,8 +24,8 @@ defmodule WE.Engine do
     )
 
     event = Workflow.get_start(workflow)
-    history = WorkflowHistory.record_event(history, event)
-    next_list = Workflow.get_next(workflow, WE.Event.name(event))
+    history = WorkflowHistory.record_event!(history, event)
+    next_list = Workflow.get_next(workflow, WE.State.name(event))
 
     reply_or_end({workflow, history, next_list})
   end
@@ -41,14 +41,14 @@ defmodule WE.Engine do
 
     history =
       cond do
-        WE.Task.started(task) ->
+        WE.State.started?(task) ->
           WE.WorkflowHistory.record_task_error(history, task, "already started")
 
-        not WE.Task.task_in?(current, task) ->
+        not WE.State.task_in?(current, task) ->
           WE.WorkflowHistory.record_task_error(history, task, "task not in current state")
 
         true ->
-          WorkflowHistory.record_task_start(history, task)
+          WorkflowHistory.record_task_start!(history, task)
       end
 
     {:reply, :ok, {workflow, history, current}}
@@ -56,17 +56,17 @@ defmodule WE.Engine do
 
   @impl GenServer
   def handle_call({:complete_task, task_name, sequenceflows}, _from, {workflow, history, current}) do
-    task = Workflow.get_task_by_name(workflow, task_name)
+    task = Workflow.get_step_by_name(workflow, task_name)
 
     {history, next_list} =
       cond do
-        not WE.Task.task_in?(current, task) ->
+        not WE.State.task_in?(current, task) ->
           {WE.WorkflowHistory.record_task_error(history, task, "task not in current state"),
            current}
 
-        not WE.DocumentLibrary.all_required_documents_present_for_task?(
+        not WE.DocumentLibrary.all_required_documents_present?(
           WE.WorkflowHistory.history_id(history),
-          WE.Task.name(task)
+          WE.State.name(task)
         ) ->
           {WE.WorkflowHistory.record_task_error(
              history,
@@ -75,7 +75,7 @@ defmodule WE.Engine do
            ), current}
 
         true ->
-          {WorkflowHistory.record_task_complete(history, task),
+          {WorkflowHistory.record_task_complete!(history, task),
            Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)}
       end
 
@@ -86,16 +86,16 @@ defmodule WE.Engine do
   def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, current}) do
     {history, next_list} =
       cond do
-        not WE.Event.event_in?(current, event) ->
+        not WE.State.event_in?(current, event) ->
           {WE.WorkflowHistory.record_event_error(
              history,
              event,
              "event not in current state"
            ), current}
 
-        not WE.DocumentLibrary.all_required_documents_present_for_event?(
+        not WE.DocumentLibrary.all_required_documents_present?(
           WE.WorkflowHistory.history_id(history),
-          WE.Event.name(event)
+          WE.State.name(event)
         ) ->
           {WE.WorkflowHistory.record_event_error(
              history,
@@ -104,7 +104,7 @@ defmodule WE.Engine do
            ), current}
 
         true ->
-          {WorkflowHistory.record_event(history, event),
+          {WorkflowHistory.record_event!(history, event),
            Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)}
       end
 
@@ -122,12 +122,12 @@ defmodule WE.Engine do
   end
 
   defp reply_or_end({workflow, history, next_list}) do
-    case Workflow.get_stops(next_list) do
+    case Workflow.get_end_events(next_list) do
       [] ->
         {:reply, :ok, {workflow, history, next_list}}
 
       stops ->
-        history = WorkflowHistory.record_event(history, Enum.at(stops, 0))
+        history = WorkflowHistory.record_event!(history, Enum.at(stops, 0))
         {:reply, :ok, {workflow, history, next_list}}
     end
   end
@@ -146,7 +146,7 @@ defmodule WE.Engine do
     engine
   end
 
-  @spec message_event(pid, Event.t(), [WE.SequenceFlow.t()]) :: pid
+  @spec message_event(pid, State.t(), [WE.SequenceFlow.t()]) :: pid
   def message_event(engine, event, sequenceflows \\ []) do
     :ok = GenServer.call(engine, {:message_event, event, sequenceflows})
     engine

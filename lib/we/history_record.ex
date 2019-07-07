@@ -10,19 +10,22 @@ defmodule WE.HistoryRecord do
     field :message, String.t(), enforce: false
   end
 
-  @spec record_task_start(WE.Task.t()) :: WE.HistoryRecord.t()
-  def record_task_start(task) do
-    %WE.HistoryRecord{id: WE.Task.name(task), type: :task_start}
+  @spec record_task_start!(WE.State.t()) :: WE.HistoryRecord.t()
+  def record_task_start!(task) do
+    WE.State.is_task!(task)
+    %WE.HistoryRecord{id: WE.State.name(task), type: :task_start}
   end
 
-  @spec record_task_complete(WE.Task.t()) :: WE.HistoryRecord.t()
-  def record_task_complete(task) do
-    %WE.HistoryRecord{id: WE.Task.name(task), type: :task_complete}
+  @spec record_task_complete!(WE.State.t()) :: WE.HistoryRecord.t()
+  def record_task_complete!(task) do
+    WE.State.is_task!(task)
+    %WE.HistoryRecord{id: WE.State.name(task), type: :task_complete}
   end
 
-  @spec record_event(WE.Event.t()) :: WE.HistoryRecord.t()
-  def record_event(event) do
-    %WE.HistoryRecord{id: WE.Event.name(event), type: :event}
+  @spec record_event!(WE.State.t()) :: WE.HistoryRecord.t()
+  def record_event!(event) do
+    WE.State.is_event!(event)
+    %WE.HistoryRecord{id: WE.State.name(event), type: :event}
   end
 
   @spec record_document(WE.Document.t()) :: WE.HistoryRecord.t()
@@ -30,14 +33,14 @@ defmodule WE.HistoryRecord do
     %WE.HistoryRecord{id: WE.Document.document_id(doc), type: :document}
   end
 
-  @spec record_task_error(WE.Task.t(), String.t()) :: WE.HistoryRecord.t()
+  @spec record_task_error(WE.State.t(), String.t()) :: WE.HistoryRecord.t()
   def record_task_error(task, message) do
-    %WE.HistoryRecord{id: WE.Task.name(task), message: message, type: :error}
+    %WE.HistoryRecord{id: WE.State.name(task), message: message, type: :error}
   end
 
-  @spec record_event_error(WE.Event.t(), String.t()) :: WE.HistoryRecord.t()
+  @spec record_event_error(WE.State.t(), String.t()) :: WE.HistoryRecord.t()
   def record_event_error(event, message) do
-    %WE.HistoryRecord{id: WE.Event.name(event), message: message, type: :error}
+    %WE.HistoryRecord{id: WE.State.name(event), message: message, type: :error}
   end
 
   @spec record_message_error(String.t()) :: WE.HistoryRecord.t()

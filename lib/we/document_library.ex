@@ -25,14 +25,9 @@ defmodule WE.DocumentLibrary do
     GenServer.call(via_tuple(history_id), {:get_all, document_ids})
   end
 
-  @spec all_required_documents_present_for_event?(String.t(), String.t()) :: boolean
-  def all_required_documents_present_for_event?(history_id, step_name) do
-    GenServer.call(via_tuple(history_id), {:all_required_present_event, step_name})
-  end
-
-  @spec all_required_documents_present_for_task?(String.t(), String.t()) :: boolean
-  def all_required_documents_present_for_task?(history_id, step_name) do
-    GenServer.call(via_tuple(history_id), {:all_required_present_task, step_name})
+  @spec all_required_documents_present?(String.t(), String.t()) :: boolean
+  def all_required_documents_present?(history_id, step_name) do
+    GenServer.call(via_tuple(history_id), {:all_required_present, step_name})
   end
 
   @spec start_link({WE.WorkflowHistory.t(), WE.Workflow.t(), [atom]}) ::
@@ -55,7 +50,7 @@ defmodule WE.DocumentLibrary do
 
   @impl GenServer
   def handle_call(
-        {:all_required_present_event, step_name},
+        {:all_required_present, step_name},
         _from,
         {history_id, workflow, documents, storage_providers}
       ) do
@@ -63,41 +58,10 @@ defmodule WE.DocumentLibrary do
       documents
       |> Enum.map(fn doc -> WE.Document.document_id(doc) end)
 
-    required_docs = WE.Workflow.all_required_document_ids_for_event(workflow, step_name)
+    required_docs = WE.Workflow.all_required_document_ids_for_step(workflow, step_name)
 
     {:reply, all_required_and_complete?(present_docs, required_docs, documents),
      {history_id, workflow, documents, storage_providers}}
-  end
-
-  @impl GenServer
-  def handle_call(
-        {:all_required_present_task, step_name},
-        _from,
-        {history_id, workflow, documents, storage_providers}
-      ) do
-    present_docs =
-      documents
-      |> Enum.map(fn doc -> WE.Document.document_id(doc) end)
-
-    required_docs = WE.Workflow.all_required_document_ids_for_task(workflow, step_name)
-
-    {:reply, all_required_and_complete?(present_docs, required_docs, documents),
-     {history_id, workflow, documents, storage_providers}}
-  end
-
-  defp all_required_and_complete?(present_docs, required_docs, documents) do
-    all_required_present? = [] == required_docs -- present_docs
-
-    all_complete? =
-      [] ==
-        required_docs
-        |> Enum.map(fn id ->
-          WE.Document.find(documents, id) |> WE.Document.document_is_complete?()
-        end)
-        |> IO.inspect()
-        |> Enum.filter(fn x -> not x end)
-
-    all_required_present? and all_complete?
   end
 
   @impl GenServer
@@ -161,5 +125,19 @@ defmodule WE.DocumentLibrary do
         {:ok,
          document_ids |> Enum.map(fn document_id -> h.find_document(document_id) |> elem(1) end)}
     end
+  end
+
+  defp all_required_and_complete?(present_docs, required_docs, documents) do
+    all_required_present? = [] == required_docs -- present_docs
+
+    all_complete? =
+      [] ==
+        required_docs
+        |> Enum.map(fn id ->
+          WE.Document.find(documents, id) |> WE.Document.document_is_complete?()
+        end)
+        |> Enum.filter(fn x -> not x end)
+
+    all_required_present? and all_complete?
   end
 end

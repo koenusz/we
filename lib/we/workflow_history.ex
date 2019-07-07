@@ -23,33 +23,33 @@ defmodule WE.WorkflowHistory do
     history.storage_adapters
   end
 
-  @spec record_task_start(WorkflowHistory.t(), WE.Task.t()) :: WorkflowHistory.t()
-  def record_task_start(history, task) do
-    record = WE.HistoryRecord.record_task_start(task)
+  @spec record_task_start!(WE.WorkflowHistory.t(), WE.State.t()) :: WE.WorkflowHistory.t()
+  def record_task_start!(history, task) do
+    record = WE.HistoryRecord.record_task_start!(task)
     update_records(history, record)
   end
 
-  @spec record_task_complete(WorkflowHistory.t(), WE.Task.t()) :: WorkflowHistory.t()
-  def record_task_complete(history, task) do
-    record = WE.HistoryRecord.record_task_complete(task)
+  @spec record_task_complete!(WE.WorkflowHistory.t(), WE.State.t()) :: WE.WorkflowHistory.t()
+  def record_task_complete!(history, task) do
+    record = WE.HistoryRecord.record_task_complete!(task)
     update_records(history, record)
   end
 
-  @spec record_event(WorkflowHistory.t(), Event.t()) :: WorkflowHistory.t()
-  def record_event(history, event) do
-    record = WE.HistoryRecord.record_event(event)
+  @spec record_event!(WE.WorkflowHistory.t(), State.t()) :: WE.WorkflowHistory.t()
+  def record_event!(history, event) do
+    record = WE.HistoryRecord.record_event!(event)
     update_records(history, record)
   end
 
-  @spec record_document(WorkflowHistory.t(), WE.Document.t()) :: WorkflowHistory.t()
+  @spec record_document(WE.WorkflowHistory.t(), WE.Document.t()) :: WE.WorkflowHistory.t()
   def record_document(history, doc) do
     record = WE.HistoryRecord.record_document(doc)
     update_records(history, record)
   end
 
-  @spec task_has_required_documents(WE.WorkflowHistory.t(), WE.Task.t()) :: boolean
-  def task_has_required_documents(history, task) do
-    WE.Workflow.all_document_ids_for_task(history.workflow, task)
+  @spec state_has_required_documents(WE.WorkflowHistory.t(), WE.State.t()) :: boolean
+  def state_has_required_documents(history, state) do
+    WE.Workflow.all_required_document_ids_for_step(history.workflow, WE.State.name(state))
     |> Enum.all?(fn id ->
       Enum.any?(history.records, &WE.HistoryRecord.has_document_id?(&1, id))
     end)
@@ -68,7 +68,7 @@ defmodule WE.WorkflowHistory do
     update_records(history, record)
   end
 
-  @spec record_task_error(WE.WorkflowHistory.t(), WE.Task.t(), String.t()) ::
+  @spec record_task_error(WE.WorkflowHistory.t(), WE.State.t(), String.t()) ::
           WE.WorkflowHistory.t()
   def record_task_error(history, task, message) do
     record = WE.HistoryRecord.record_task_error(task, message)
@@ -79,7 +79,7 @@ defmodule WE.WorkflowHistory do
     update_records(history, record)
   end
 
-  @spec record_event_error(WE.WorkflowHistory.t(), WE.Event.t(), String.t()) ::
+  @spec record_event_error(WE.WorkflowHistory.t(), WE.State.t(), String.t()) ::
           WE.WorkflowHistory.t()
   def record_event_error(history, event, message) do
     record = WE.HistoryRecord.record_event_error(event, message)
