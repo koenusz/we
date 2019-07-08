@@ -35,7 +35,7 @@ defmodule WE.WorkflowHistory do
     update_records(history, record)
   end
 
-  @spec record_event!(WE.WorkflowHistory.t(), State.t()) :: WE.WorkflowHistory.t()
+  @spec record_event!(WE.WorkflowHistory.t(), WE.State.t()) :: WE.WorkflowHistory.t()
   def record_event!(history, event) do
     record = WE.HistoryRecord.record_event!(event)
     update_records(history, record)
@@ -61,10 +61,6 @@ defmodule WE.WorkflowHistory do
 
   def record_message_error(history, message) do
     record = WE.HistoryRecord.record_message_error(message)
-
-    history.storage_adapters
-    |> Enum.each(fn pr -> pr.store_history_record(record) end)
-
     update_records(history, record)
   end
 
@@ -72,10 +68,6 @@ defmodule WE.WorkflowHistory do
           WE.WorkflowHistory.t()
   def record_task_error(history, task, message) do
     record = WE.HistoryRecord.record_task_error(task, message)
-
-    history.storage_adapters
-    |> Enum.each(fn pr -> pr.store_history_record(record) end)
-
     update_records(history, record)
   end
 
@@ -83,16 +75,12 @@ defmodule WE.WorkflowHistory do
           WE.WorkflowHistory.t()
   def record_event_error(history, event, message) do
     record = WE.HistoryRecord.record_event_error(event, message)
-
-    history.storage_adapters
-    |> Enum.each(fn pr -> pr.store_history_record(record) end)
-
     update_records(history, record)
   end
 
   defp update_records(history, record) do
     history.storage_adapters
-    |> Enum.each(fn pr -> pr.store_history_record(record) end)
+    |> Enum.each(fn sa -> sa.store_history_record(record) end)
 
     %{history | records: [record | history.records]}
   end

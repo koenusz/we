@@ -10,10 +10,14 @@ defmodule WE.Workflow do
           default: []
   end
 
-  @spec get_start(WE.Workflow.t()) :: WE.State.t() | :error
-  def get_start(workflow) do
-    workflow.steps
-    |> Enum.find(:error, fn step -> step.type == :start end)
+  @spec get_start_event!(WE.Workflow.t()) :: WE.State.t() | no_return
+  def get_start_event!(workflow) do
+    event =
+      workflow.steps
+      |> Enum.find(:error, &WE.State.is_start_event?(&1))
+
+    if event == nil, do: raise(WE.WorkflowError, message: "No start event")
+    event
   end
 
   @spec get_next(WE.Workflow.t(), String.t()) :: [WE.State.t()]
@@ -24,10 +28,14 @@ defmodule WE.Workflow do
     |> Enum.map(fn sf -> get_step_by_name(workflow, sf.to) end)
   end
 
-  @spec get_end_events([WE.State.t()]) :: [State.t()]
+  @spec get_end_events([WE.State.t()]) :: [State.t()] | no_return
   def get_end_events(steps) do
-    steps
-    |> Enum.filter(fn step -> step.type == :end end)
+    events =
+      steps
+      |> Enum.filter(fn step -> step.type == :end end)
+
+    if events == [], do: raise(WE.WorkflowError, message: "No end event")
+    events
   end
 
   @spec get_steps(WE.Workflow.t()) :: [WE.State.t()]
@@ -127,4 +135,8 @@ defmodule WE.Workflow do
         ]
     }
   end
+end
+
+defmodule WE.WorkflowError do
+  defexception message: "Workflow error"
 end

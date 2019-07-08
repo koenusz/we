@@ -59,7 +59,12 @@ defmodule WE.State do
     end
   end
 
-  @spec event_in?(any, WE.State.t()) :: boolean
+  @spec is_start_event?(WE.State.t()) :: boolean
+  def is_start_event?(step) do
+    step.type == :event and step.content_type == :start
+  end
+
+  @spec event_in?([WE.State.t()], WE.State.t()) :: boolean
   def event_in?(list, %WE.State{type: :event} = state) do
     list
     |> Enum.find(false, fn step ->
@@ -67,12 +72,10 @@ defmodule WE.State do
     end)
   end
 
-  @spec task_in?(any, WE.State.t()) :: boolean
+  @spec task_in?([WE.State.t()], WE.State.t()) :: boolean
   def task_in?(list, %WE.State{type: :task} = state) do
     list
-    |> Enum.find(false, fn step ->
-      same_name?(step, state)
-    end)
+    |> Enum.member?(state)
   end
 
   @spec same_name?(WE.State.t(), WE.State.t()) :: boolean
@@ -90,13 +93,15 @@ defmodule WE.State do
     state.content_type
   end
 
-  @spec start_task(WE.State.t()) :: WE.State.t()
+  @spec start_task(WE.State.t()) :: WE.State.t() | no_return
   def start_task(%WE.State{type: :task} = task) do
+    is_task!(task)
     %{task | started: true}
   end
 
-  @spec started?(WE.State.t()) :: boolean
-  def started?(%WE.State{type: :task} = task) do
+  @spec task_started?(WE.State.t()) :: boolean | no_return
+  def task_started?(%WE.State{type: :task} = task) do
+    is_task!(task)
     task.started
   end
 

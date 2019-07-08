@@ -23,7 +23,7 @@ defmodule WE.Engine do
       WE.WorkflowHistory.storage_adapters(history)
     )
 
-    event = Workflow.get_start(workflow)
+    event = Workflow.get_start_event!(workflow)
     history = WorkflowHistory.record_event!(history, event)
     next_list = Workflow.get_next(workflow, WE.State.name(event))
 
@@ -37,11 +37,15 @@ defmodule WE.Engine do
 
   @impl GenServer
   def handle_call({:start_task, task_name}, _from, {workflow, history, current}) do
-    task = Workflow.get_step_by_name(workflow, task_name)
+    task =
+      Workflow.get_step_by_name(workflow, task_name)
+      |> IO.inspect()
+
+    IO.inspect(current)
 
     history =
       cond do
-        WE.State.started?(task) ->
+        WE.State.task_started?(task) ->
           WE.WorkflowHistory.record_task_error(history, task, "already started")
 
         not WE.State.task_in?(current, task) ->
