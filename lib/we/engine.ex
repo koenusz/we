@@ -37,11 +37,7 @@ defmodule WE.Engine do
 
   @impl GenServer
   def handle_call({:start_task, task_name}, _from, {workflow, history, current}) do
-    task =
-      Workflow.get_step_by_name(workflow, task_name)
-      |> IO.inspect()
-
-    IO.inspect(current)
+    task = Workflow.get_step_by_name(workflow, task_name)
 
     history =
       cond do
@@ -157,8 +153,15 @@ defmodule WE.Engine do
   end
 
   @spec start_task(pid, String.t()) :: pid
-  def start_task(engine, task) do
+  def start_task(engine, task) when is_binary(task) do
     :ok = GenServer.call(engine, {:start_task, task})
+    engine
+  end
+
+  @spec start_task(pid, WE.State.t()) :: pid
+  def start_task(engine, task) do
+    WE.State.is_task!(task)
+    :ok = GenServer.call(engine, {:start_task, WE.State.name(task)})
     engine
   end
 

@@ -64,6 +64,11 @@ defmodule WE.State do
     step.type == :event and step.content_type == :start
   end
 
+  @spec is_end_event?(WE.State.t()) :: boolean
+  def is_end_event?(step) do
+    step.type == :event and step.content_type == :end
+  end
+
   @spec event_in?([WE.State.t()], WE.State.t()) :: boolean
   def event_in?(list, %WE.State{type: :event} = state) do
     list
@@ -83,6 +88,11 @@ defmodule WE.State do
     state1.name == state2.name
   end
 
+  @spec has_name?(WE.State.t(), String.t()) :: boolean
+  def has_name?(state1, name) do
+    state1.name == name
+  end
+
   @spec name(WE.State.t()) :: String.t()
   def name(state) do
     state.name
@@ -99,10 +109,9 @@ defmodule WE.State do
     %{task | started: true}
   end
 
-  @spec task_started?(WE.State.t()) :: boolean | no_return
-  def task_started?(%WE.State{type: :task} = task) do
-    is_task!(task)
-    task.started
+  @spec task_started?(WE.State.t()) :: boolean
+  def task_started?(task) do
+    task.type != :event and task.started
   end
 
   @spec sequence_flows(WE.State.t()) :: [SequenceFlow.t()]

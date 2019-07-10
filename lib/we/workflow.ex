@@ -28,14 +28,10 @@ defmodule WE.Workflow do
     |> Enum.map(fn sf -> get_step_by_name(workflow, sf.to) end)
   end
 
-  @spec get_end_events([WE.State.t()]) :: [State.t()] | no_return
+  @spec get_end_events([WE.State.t()]) :: [State.t()]
   def get_end_events(steps) do
-    events =
-      steps
-      |> Enum.filter(fn step -> step.type == :end end)
-
-    if events == [], do: raise(WE.WorkflowError, message: "No end event")
-    events
+    steps
+    |> Enum.filter(&WE.State.is_end_event?(&1))
   end
 
   @spec get_steps(WE.Workflow.t()) :: [WE.State.t()]
@@ -63,13 +59,13 @@ defmodule WE.Workflow do
   @spec get_step_by_name(Workflow.t(), String.t()) :: WE.State.t()
   def get_step_by_name(workflow, name) do
     workflow.steps
-    |> Enum.find(:error, fn step -> step.name == name end)
+    |> Enum.find(:error, &WE.State.has_name?(&1, name))
   end
 
   @spec get_document(Workflow.t(), String.t()) :: WE.Document.t()
   def get_document(workflow, document_id) do
     workflow.documents
-    |> Enum.find({:error, "not found"}, fn doc -> doc.id == document_id end)
+    |> Enum.find({:error, "not found"}, &WE.Document.has_id?(&1, document_id))
   end
 
   @spec get_documents(Workflow.t()) :: [WE.Document.t()]

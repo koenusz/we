@@ -8,11 +8,10 @@ defmodule WE.EngineTest do
 
     {:ok, engine} = Engine.start_link(workflow)
 
-    :ok =
-      engine
-      |> Engine.start_execution()
+    engine
+    |> Engine.start_execution()
 
-    {:ok, history} = Engine.history(engine)
+    {:ok, _pid, history} = Engine.history(engine)
     assert length(history.records) == 2
   end
 
@@ -44,12 +43,14 @@ defmodule WE.EngineTest do
     engine
     |> Engine.start_execution()
 
-    :ok = Engine.start_task(engine, task)
+    Engine.start_task(engine, task)
     task = WE.State.start_task(task)
-    assert {:ok, [task]} == Engine.current_state(engine)
+    {:ok, _pid, task_list} = Engine.current_state(engine)
+
+    assert [task] == task_list
 
     Engine.start_task(engine, task)
-    :ok = Engine.complete_task(engine, task, WE.State.flow_to(task, ["stop"]))
+    Engine.complete_task(engine, task, WE.State.flow_to(task, ["stop"]))
 
     {:ok, history} = Engine.history(engine)
 
