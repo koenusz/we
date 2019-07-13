@@ -16,8 +16,8 @@ defmodule WE.EngineTest do
   end
 
   test "complete task with default flow" do
-    workflow = TestWorkflowHelper.task()
-    task = Workflow.get_step_by_name(workflow, "task")
+    workflow = TestWorkflowHelper.service_task()
+    {:ok, task} = Workflow.get_step_by_name(workflow, "task")
     {:ok, engine} = Engine.start_link(workflow)
 
     engine
@@ -29,18 +29,18 @@ defmodule WE.EngineTest do
     assert [task] == task_list
 
     Engine.complete_task(engine, task)
-    {:ok, history} = Engine.history(engine)
+    {:ok, _pid, history} = Engine.history(engine)
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
     {:ok, _pid, task_list} = Engine.current_state(engine)
 
-    assert [%WE.State{name: "stop", sequence_flows: [], type: :end}] == task_list
+    assert [WE.State.end_event("stop")] == task_list
   end
 
   test "complete task with designated flow" do
-    workflow = TestWorkflowHelper.task()
-    task = Workflow.get_step_by_name(workflow, "task")
+    workflow = TestWorkflowHelper.service_task()
+    {:ok, task} = Workflow.get_step_by_name(workflow, "task")
     {:ok, engine} = Engine.start_link(workflow)
 
     engine
@@ -55,12 +55,12 @@ defmodule WE.EngineTest do
     Engine.start_task(engine, task)
     Engine.complete_task(engine, task, WE.State.flow_to(task, ["stop"]))
 
-    {:ok, history} = Engine.history(engine)
+    {:ok, _pid, history} = Engine.history(engine)
 
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
-    assert {:ok, [%WE.State{name: "stop", sequence_flows: [], type: :end}]} ==
+    assert {:ok, [%WE.State{name: "stop", type: :end}]} ==
              Engine.current_state(engine)
   end
 

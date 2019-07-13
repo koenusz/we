@@ -21,15 +21,6 @@ defmodule WE.Workflow do
     event
   end
 
-  @spec get_next(WE.Workflow.t(), String.t()) :: [WE.State.t()]
-  def get_next(workflow, current_name) do
-    workflow
-    |> get_step_by_name(current_name)
-    |> WE.Helpers.unpack_ok_tuple()
-    |> sequence_flows()
-    |> Enum.map(fn sf -> get_step_by_name(workflow, sf.to) end)
-  end
-
   @spec get_end_events([WE.State.t()]) :: [State.t()]
   def get_end_events(steps) do
     steps
@@ -41,20 +32,27 @@ defmodule WE.Workflow do
     workflow.steps
   end
 
+  @spec get_next(WE.Workflow.t(), String.t()) :: [WE.State.t()]
+  def get_next(workflow, current_name) do
+    workflow.sequence_flows
+    |> Enum.filter(&WE.SequenceFlow.from_equals(&1, current_name))
+    |> Enum.map(&WE.SequenceFlow.to(&1))
+    |> Enum.map(&WE.Workflow.get_step_by_name(workflow, &1))
+    |> Enum.map(&WE.Helpers.unpack_ok_tuple(&1))
+  end
+
   @spec get_next_steps_by_sequenceflows(Workflow.t(), [SequenceFlow.t()], WE.State.t()) ::
           [WE.State.t()]
-  def get_next_steps_by_sequenceflows(workflow, sequenceflows, task) do
+  def get_next_steps_by_sequenceflows(workflow, sequenceflows, state) do
     case sequenceflows do
       [] ->
-        task.sequence_flows
-        |> WE.SequenceFlow.get_default_flow()
-        |> Enum.map(fn flow -> flow.to end)
-        |> Enum.map(&get_step_by_name(workflow, &1))
+        get_next(workflow, WE.State.name(state))
 
       _ ->
         sequenceflows
         |> Enum.map(fn flow -> flow.to end)
         |> Enum.map(&get_step_by_name(workflow, &1))
+        |> Enum.map(&WE.Helpers.unpack_ok_tuple(&1))
     end
   end
 
@@ -122,33 +120,39 @@ defmodule WE.Workflow do
 
   @spec add_service_task(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_service_task(workflow, name) do
-    %{workflow | steps: [WE.State.service_task(name), workflow.steps]}
+    %{workflow | steps: [WE.State.service_task(name) | workflow.steps]}
   end
 
   @spec add_human_task(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_human_task(workflow, name) do
-    %{workflow | steps: [WE.State.human_task(name), workflow.steps]}
+    %{workflow | steps: [WE.State.human_task(name) | workflow.steps]}
   end
 
   @spec add_message_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_message_event(workflow, name) do
-    %{workflow | steps: [WE.State.message_event(name), workflow.steps]}
+    %{workflow | steps: [WE.State.message_event(name) | workflow.steps]}
   end
 
   @spec add_start_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_start_event(workflow, name) do
-    %{workflow | steps: [WE.State.start_event(name), workflow.steps]}
+    %{workflow | steps: [WE.State.start_event(name) | workflow.steps]}
   end
 
   @spec add_end_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_end_event(workflow, name) do
-    %{workflow | steps: [WE.State.end_event(name), workflow.steps]}
+    %{workflow | steps: [WE.State.end_event(name) | workflow.steps]}
+  end
+
+  @spec add_default_sequence_flow(WE.Workflow.t(), String.t(), String.t()) :: WE.Workflow.t()
+  def add_default_sequence_flow(workflow, from, to) do
+    flow = WE.SequenceFlow.default(from, to)
+    %{workflow | sequence_flows: [flow | workflow.sequence_flows]}
   end
 
   @spec add_sequence_flow(WE.Workflow.t(), String.t(), String.t()) :: WE.Workflow.t()
   def add_sequence_flow(workflow, from, to) do
     flow = WE.SequenceFlow.sequence_flow(from, to)
-    %{workflow | sequence_flows: [flow, workflow.sequence_flows]}
+    %{workflow | sequence_flows: [flow | workflow.sequence_flows]}
   end
 
   @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t()

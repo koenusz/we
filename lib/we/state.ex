@@ -67,6 +67,11 @@ defmodule WE.State do
     step.type == :event and step.content_type == :end
   end
 
+  @spec not_is_end_event?(WE.State.t()) :: boolean
+  def not_is_end_event?(step) do
+    step.type == :event and step.content_type != :end
+  end
+
   @spec event_in?([WE.State.t()], WE.State.t()) :: boolean
   def event_in?(list, %WE.State{type: :event} = state) do
     list
@@ -91,8 +96,8 @@ defmodule WE.State do
   end
 
   @spec has_name?(WE.State.t(), String.t()) :: boolean
-  def has_name?(state1, name) do
-    state1.name == name
+  def has_name?(state, name) do
+    state.name == name
   end
 
   @spec name(WE.State.t()) :: String.t()

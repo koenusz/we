@@ -12,6 +12,7 @@ defmodule WE.Engine do
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
           {:ok, {WE.Workflow.t(), WE.WorkflowHistory.t()}}
   def init({workflow, storage_adapters}, _opts \\ []) do
+    WE.WorkflowValidator.validate(workflow)
     {:ok, {workflow, WorkflowHistory.init(workflow, storage_adapters)}}
   end
 
@@ -26,8 +27,6 @@ defmodule WE.Engine do
     event = Workflow.get_start_event!(workflow)
     history = WorkflowHistory.record_event!(history, event)
     next_list = Workflow.get_next(workflow, WE.State.name(event))
-
-    IO.inspect(next_list)
 
     reply_or_end({workflow, history, next_list})
   end

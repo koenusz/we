@@ -14,8 +14,8 @@ defmodule WE.SequenceFlow do
     Enum.member?(names, flow.from) and Enum.member?(names, flow.to)
   end
 
-  @spec get_default_flow([WE.SequenceFlow.t()]) :: [WE.SequenceFlow.t()]
-  def get_default_flow(list) do
+  @spec get_default_flows([WE.SequenceFlow.t()]) :: [WE.SequenceFlow.t()]
+  def get_default_flows(list) do
     list
     |> Enum.filter(fn flow -> flow.default end)
   end
@@ -23,6 +23,11 @@ defmodule WE.SequenceFlow do
   @spec from(WE.SequenceFlow.t()) :: String.t()
   def from(flow) do
     flow.from
+  end
+
+  @spec from_equals(WE.SequenceFlow.t(), String.t()) :: boolean
+  def from_equals(flow, name) do
+    flow.from == name
   end
 
   @spec to(WE.SequenceFlow.t()) :: String.t()

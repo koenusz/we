@@ -6,6 +6,7 @@ defmodule WE.WorkflowValidator do
     |> has_end?()
     |> step_names_unique?()
     |> sequence_flows_has_existing_steps()
+    |> all_steps_have_default_flow_out()
   end
 
   defp has_start?(workflow) do
@@ -69,6 +70,28 @@ defmodule WE.WorkflowValidator do
     unless test do
       raise WE.ValidationError,
         message: "A sequenceflow has non existing steps"
+    end
+
+    workflow
+  end
+
+  defp all_steps_have_default_flow_out(workflow) do
+    default_from =
+      workflow
+      |> WE.Workflow.sequence_flows()
+      |> WE.SequenceFlow.get_default_flows()
+      |> Enum.map(&WE.SequenceFlow.from(&1))
+
+    test =
+      workflow
+      |> WE.Workflow.get_steps()
+      |> Enum.filter(&WE.State.not_is_end_event?(&1))
+      |> Enum.map(&WE.State.name(&1))
+      |> Enum.all?(&Enum.member?(default_from, &1))
+
+    unless test do
+      raise WE.ValidationError,
+        message: "all steps need a default out flow, except end events"
     end
 
     workflow
