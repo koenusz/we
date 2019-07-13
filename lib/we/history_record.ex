@@ -10,6 +10,7 @@ defmodule WE.HistoryRecord do
     field :message, String.t(), enforce: false
   end
 
+  # constructor
   @spec record_task_start!(WE.State.t()) :: WE.HistoryRecord.t()
   def record_task_start!(task) do
     WE.State.is_task!(task)
@@ -48,6 +49,19 @@ defmodule WE.HistoryRecord do
     %WE.HistoryRecord{id: UUID.uuid1(), message: message, type: :error}
   end
 
+  # utils
+
+  @spec is_started_task_with_name?(WE.HistoryRecord.t(), String.t()) :: boolean
+  def is_started_task_with_name?(record, task_name) do
+    record.type == :task_start and record.id == task_name
+  end
+
+  @spec is_completed_task_with_name?(WE.HistoryRecord.t(), String.t()) :: boolean
+  def is_completed_task_with_name?(record, task_name) do
+    record.type == :task_completed and record.id == task_name
+  end
+
+  @spec has_document_id?(WE.HistoryRecord.t(), String.t()) :: boolean
   def has_document_id?(record, document_id) do
     record.id == document_id and record.type == :document
   end

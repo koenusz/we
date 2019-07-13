@@ -12,4 +12,22 @@ defmodule WE.Helpers do
   def unpack_ok_tuple(val) do
     val
   end
+
+  @spec unpack_engine_tuple(any) :: any
+  def unpack_engine_tuple({:ok, engine, _val}) do
+    engine
+  end
+
+  def unpack_engine_tuple(val) do
+    val
+  end
+
+  @spec unpack_engine_tuple_value(any) :: any
+  def unpack_engine_tuple_value({:ok, _engine, val}) do
+    val
+  end
+
+  def unpack_engine_tuple_value(val) do
+    val
+  end
 end

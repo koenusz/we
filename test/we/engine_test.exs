@@ -46,21 +46,23 @@ defmodule WE.EngineTest do
     engine
     |> Engine.start_execution()
 
-    Engine.start_task(engine, task)
-    task = WE.State.start_task(task)
     {:ok, _pid, task_list} = Engine.current_state(engine)
-
     assert [task] == task_list
 
     Engine.start_task(engine, task)
-    Engine.complete_task(engine, task, WE.State.flow_to(task, ["stop"]))
+
+    assert Engine.history(engine)
+           |> WE.Helpers.unpack_engine_tuple_value()
+           |> WE.WorkflowHistory.task_started?(WE.State.name(task))
+
+    Engine.complete_task(engine, task, [WE.SequenceFlow.sequence_flow("task", "stop")])
 
     {:ok, _pid, history} = Engine.history(engine)
 
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
-    assert {:ok, [%WE.State{name: "stop", type: :end}]} ==
+    assert {:ok, engine, [WE.State.end_event("stop")]} ==
              Engine.current_state(engine)
   end
 

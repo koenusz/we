@@ -5,7 +5,7 @@ defmodule WE.Engine do
   alias WE.{Workflow, WorkflowHistory}
 
   typedstruct enforce: true, opaque: true do
-    field :current, [State.t() | State.t()]
+    field :current, [State.t()]
   end
 
   @impl GenServer
@@ -42,14 +42,14 @@ defmodule WE.Engine do
 
     history =
       cond do
-        WE.State.task_started?(task) ->
+        WE.WorkflowHistory.task_started?(history, WE.State.name(task)) ->
           WE.WorkflowHistory.record_task_error(history, task, "already started")
 
         not WE.State.task_in?(current, task) ->
           WE.WorkflowHistory.record_task_error(history, task, "task not in current state")
 
         true ->
-          WorkflowHistory.record_task_start!(history, task)
+          WE.WorkflowHistory.record_task_start!(history, task)
       end
 
     {:reply, :ok, {workflow, history, current}}

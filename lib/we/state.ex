@@ -9,7 +9,6 @@ defmodule WE.State do
     field :name, String.t()
     field :type, state_type(), default: :event
     field :content_type, task_type() | event_type(), default: :message
-    field :started, boolean, default: false
   end
 
   @spec service_task(String.t()) :: WE.State.t()
@@ -108,16 +107,5 @@ defmodule WE.State do
   @spec content_type(We.State.t()) :: atom
   def content_type(state) do
     state.content_type
-  end
-
-  @spec start_task(WE.State.t()) :: WE.State.t() | no_return
-  def start_task(%WE.State{type: :task} = task) do
-    is_task!(task)
-    %{task | started: true}
-  end
-
-  @spec task_started?(WE.State.t()) :: boolean
-  def task_started?(task) do
-    task.type != :event and task.started
   end
 end

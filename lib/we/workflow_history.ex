@@ -8,6 +8,8 @@ defmodule WE.WorkflowHistory do
     field :storage_adapters, [atom]
   end
 
+  # construct
+
   @spec init(WE.Workflow.t(), [WE.StorageAdapter.t()]) :: WE.WorkflowHistory.t()
   def init(workflow, storage_adapters) do
     %WE.WorkflowHistory{workflow: workflow, storage_adapters: storage_adapters}
@@ -22,6 +24,22 @@ defmodule WE.WorkflowHistory do
   def storage_adapters(history) do
     history.storage_adapters
   end
+
+  # runtime checks
+
+  @spec task_started?(WE.WorkflowHistory.t(), String.t()) :: boolean
+  def task_started?(history, task_name) do
+    history.records
+    |> Enum.any?(&WE.HistoryRecord.is_started_task_with_name?(&1, task_name))
+  end
+
+  @spec task_completed?(WE.WorkflowHistory.t(), String.t()) :: boolean
+  def task_completed?(history, task_name) do
+    history.records
+    |> Enum.any?(&WE.HistoryRecord.is_completed_task_with_name?(&1, task_name))
+  end
+
+  # record events
 
   @spec record_task_start!(WE.WorkflowHistory.t(), WE.State.t()) :: WE.WorkflowHistory.t()
   def record_task_start!(history, task) do
