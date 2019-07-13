@@ -3,7 +3,8 @@ defmodule WE.Workflow do
 
   typedstruct enforce: true, opaque: true do
     field :name, String.t()
-    field :steps, list(WE.State.t())
+    field :steps, list(WE.State.t()), default: []
+    field :sequence_flows, list(WE.SequenceFlow.t()), default: []
 
     field :documents,
           list({String.t(), WE.Document.document_type(), String.t()}),
@@ -24,7 +25,8 @@ defmodule WE.Workflow do
   def get_next(workflow, current_name) do
     workflow
     |> get_step_by_name(current_name)
-    |> WE.State.sequence_flows()
+    |> WE.Helpers.unpack_ok_tuple()
+    |> sequence_flows()
     |> Enum.map(fn sf -> get_step_by_name(workflow, sf.to) end)
   end
 
@@ -56,21 +58,34 @@ defmodule WE.Workflow do
     end
   end
 
-  @spec get_step_by_name(Workflow.t(), String.t()) :: WE.State.t()
-  def get_step_by_name(workflow, name) do
+  @spec get_step_by_name(WE.Workflow.t(), String.t()) ::
+          {:ok, WE.State.t()} | {:error, String.t()}
+  def get_step_by_name(workflow, name) when is_binary(name) do
     workflow.steps
-    |> Enum.find(:error, &WE.State.has_name?(&1, name))
+    |> Enum.find({:error, "step #{name} not found"}, &WE.State.has_name?(&1, name))
+    |> WE.Helpers.ok_tuple()
   end
 
-  @spec get_document(Workflow.t(), String.t()) :: WE.Document.t()
+  @spec get_step_by_name(WE.Workflow.t(), WE.State.t()) :: WE.State.t()
+  def get_step_by_name(workflow, state) do
+    get_step_by_name(workflow, WE.State.name(state))
+  end
+
+  @spec get_document(WE.Workflow.t(), String.t()) :: {:ok, WE.Document.t()} | {:error, String.t()}
   def get_document(workflow, document_id) do
     workflow.documents
-    |> Enum.find({:error, "not found"}, &WE.Document.has_id?(&1, document_id))
+    |> Enum.find({:error, "document not found"}, &WE.Document.has_id?(&1, document_id))
+    |> WE.Helpers.ok_tuple()
   end
 
-  @spec get_documents(Workflow.t()) :: [WE.Document.t()]
+  @spec get_documents(WE.Workflow.t()) :: [WE.Document.t()]
   def get_documents(workflow) do
     workflow.documents
+  end
+
+  @spec sequence_flows(WE.Workflow.t()) :: [WE.SequenceFlow.t()]
+  def sequence_flows(workflow) do
+    workflow.sequence_flows
   end
 
   @spec name(WE.Workflow.t()) :: String.t()
@@ -100,14 +115,40 @@ defmodule WE.Workflow do
   end
 
   # create workflow
-  @spec workflow(String.t(), list(WE.State.t())) :: WE.Workflow.t()
-  def workflow(name, steps) do
-    %WE.Workflow{name: name, steps: steps}
+  @spec workflow(String.t()) :: WE.Workflow.t()
+  def workflow(name) do
+    %WE.Workflow{name: name}
   end
 
-  @spec add_step(Workflow.t(), WE.State.t()) :: Workflow.t()
-  def add_step(workflow, step) do
-    %{workflow | steps: [step, workflow.steps]}
+  @spec add_service_task(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
+  def add_service_task(workflow, name) do
+    %{workflow | steps: [WE.State.service_task(name), workflow.steps]}
+  end
+
+  @spec add_human_task(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
+  def add_human_task(workflow, name) do
+    %{workflow | steps: [WE.State.human_task(name), workflow.steps]}
+  end
+
+  @spec add_message_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
+  def add_message_event(workflow, name) do
+    %{workflow | steps: [WE.State.message_event(name), workflow.steps]}
+  end
+
+  @spec add_start_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
+  def add_start_event(workflow, name) do
+    %{workflow | steps: [WE.State.start_event(name), workflow.steps]}
+  end
+
+  @spec add_end_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
+  def add_end_event(workflow, name) do
+    %{workflow | steps: [WE.State.end_event(name), workflow.steps]}
+  end
+
+  @spec add_sequence_flow(WE.Workflow.t(), String.t(), String.t()) :: WE.Workflow.t()
+  def add_sequence_flow(workflow, from, to) do
+    flow = WE.SequenceFlow.sequence_flow(from, to)
+    %{workflow | sequence_flows: [flow, workflow.sequence_flows]}
   end
 
   @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t()

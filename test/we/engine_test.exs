@@ -24,15 +24,18 @@ defmodule WE.EngineTest do
     |> Engine.start_execution()
 
     Engine.start_task(engine, task)
-    assert {:ok, [task]} == Engine.current_state(engine)
+    {:ok, _pid, task_list} = Engine.current_state(engine)
+
+    assert [task] == task_list
 
     Engine.complete_task(engine, task)
     {:ok, history} = Engine.history(engine)
     assert length(history.records) == 4
     Engine.start_task(engine, task)
 
-    assert {:ok, [%WE.State{name: "stop", sequence_flows: [], type: :end}]} ==
-             Engine.current_state(engine)
+    {:ok, _pid, task_list} = Engine.current_state(engine)
+
+    assert [%WE.State{name: "stop", sequence_flows: [], type: :end}] == task_list
   end
 
   test "complete task with designated flow" do

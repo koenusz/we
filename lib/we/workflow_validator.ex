@@ -1,12 +1,11 @@
 defmodule WE.WorkflowValidator do
-  @spec validate(WE.Workflow.t()) :: :ok | no_return
+  @spec validate(WE.Workflow.t()) :: WE.Workflow.t() | no_return
   def validate(workflow) do
     workflow
     |> has_start?()
     |> has_end?()
     |> step_names_unique?()
-
-    :ok
+    |> sequence_flows_has_existing_steps()
   end
 
   defp has_start?(workflow) do
@@ -53,6 +52,23 @@ defmodule WE.WorkflowValidator do
     unless test do
       raise WE.ValidationError,
         message: "The steps in workflow #{WE.Workflow.name(workflow)} have duplicate names"
+    end
+
+    workflow
+  end
+
+  defp sequence_flows_has_existing_steps(workflow) do
+    step_names =
+      WE.Workflow.get_steps(workflow)
+      |> Enum.map(&WE.State.name/1)
+
+    test =
+      WE.Workflow.sequence_flows(workflow)
+      |> Enum.all?(fn flow -> WE.SequenceFlow.flow_in_names?(flow, step_names) end)
+
+    unless test do
+      raise WE.ValidationError,
+        message: "A sequenceflow has non existing steps"
     end
 
     workflow

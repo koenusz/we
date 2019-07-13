@@ -7,7 +7,6 @@ defmodule WE.State do
 
   typedstruct enforce: true, opaque: true do
     field :name, String.t()
-    field :sequence_flows, list(SequenceFlow.t()), default: []
     field :type, state_type(), default: :event
     field :content_type, task_type() | event_type(), default: :message
     field :started, boolean, default: false
@@ -38,25 +37,24 @@ defmodule WE.State do
     %WE.State{name: name, content_type: :end}
   end
 
-  @spec add_sequence_flow(WE.State.t(), WE.SequenceFlow.t()) :: WE.State.t()
-  def add_sequence_flow(state, sequence_flow) do
-    %{state | sequence_flows: [sequence_flow | state.sequence_flows]}
-  end
-
   # utility fuctions
 
-  @spec is_event!(WE.State.t()) :: nil
-  def is_event!(state) do
-    if state.type != :event do
-      raise "#{state.name} is not an event"
-    end
+  @spec is_event!(WE.State.t()) :: boolean
+  def is_event!(%WE.State{type: :event}) do
+    true
   end
 
-  @spec is_task!(WE.State.t()) :: nil
+  def is_event!(state) do
+    raise "#{state.name} is not an event"
+  end
+
+  @spec is_task!(WE.State.t()) :: boolean
+  def is_task!(%WE.State{type: :task}) do
+    true
+  end
+
   def is_task!(state) do
-    if state.type != :task do
-      raise "#{state.name} is not an event"
-    end
+    raise "#{state.name} is not an event"
   end
 
   @spec is_start_event?(WE.State.t()) :: boolean
@@ -81,6 +79,10 @@ defmodule WE.State do
   def task_in?(list, %WE.State{type: :task} = state) do
     list
     |> Enum.member?(state)
+  end
+
+  def task_in?(_list, _state) do
+    false
   end
 
   @spec same_name?(WE.State.t(), WE.State.t()) :: boolean
@@ -113,25 +115,4 @@ defmodule WE.State do
   def task_started?(task) do
     task.type != :event and task.started
   end
-
-  @spec sequence_flows(WE.State.t()) :: [SequenceFlow.t()]
-  def sequence_flows(state) do
-    state.sequence_flows
-  end
-
-  # TODO renamed from flow-to
-  # @spec sequence_flows_by_names(WE.State.t(), [String.t()]) :: [SequenceFlow.t()]
-  # def sequence_flows_by_names(state, names) do
-  #   names =
-  #     case names do
-  #       [] ->
-  #         []
-
-  #       [_h | _t] ->
-  #         names
-
-  #       _ ->
-  #         [names]
-  #     end
-  # end
 end

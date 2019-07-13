@@ -27,6 +27,8 @@ defmodule WE.Engine do
     history = WorkflowHistory.record_event!(history, event)
     next_list = Workflow.get_next(workflow, WE.State.name(event))
 
+    IO.inspect(next_list)
+
     reply_or_end({workflow, history, next_list})
   end
 
@@ -37,7 +39,7 @@ defmodule WE.Engine do
 
   @impl GenServer
   def handle_call({:start_task, task_name}, _from, {workflow, history, current}) do
-    task = Workflow.get_step_by_name(workflow, task_name)
+    {:ok, task} = Workflow.get_step_by_name(workflow, task_name)
 
     history =
       cond do
@@ -56,7 +58,8 @@ defmodule WE.Engine do
 
   @impl GenServer
   def handle_call({:complete_task, task_name, sequenceflows}, _from, {workflow, history, current}) do
-    task = Workflow.get_step_by_name(workflow, task_name)
+    {:ok, task} = Workflow.get_step_by_name(workflow, task_name)
+    WE.State.is_task!(task)
 
     {history, next_list} =
       cond do

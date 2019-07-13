@@ -9,37 +9,37 @@ defmodule WE.SequenceFlow do
 
   alias WE.SequenceFlow
 
+  @spec flow_in_names?(WE.SequenceFlow.t(), [String.t()]) :: boolean
+  def flow_in_names?(flow, names) do
+    Enum.member?(names, flow.from) and Enum.member?(names, flow.to)
+  end
+
   @spec get_default_flow([WE.SequenceFlow.t()]) :: [WE.SequenceFlow.t()]
   def get_default_flow(list) do
     list
     |> Enum.filter(fn flow -> flow.default end)
   end
 
-  @spec add_sequence_flow(list(WE.SequenceFlow.t()), WE.SequenceFlow.t()) ::
-          list(WE.SequenceFlow.t())
-  def add_sequence_flow(list, flow) do
-    [flow, list]
+  @spec from(WE.SequenceFlow.t()) :: String.t()
+  def from(flow) do
+    flow.from
   end
 
-  @spec sequence_flow(list(WE.SequenceFlow.t()), String.t(), String.t()) ::
-          list(WE.SequenceFlow.t())
-  def sequence_flow(list, from, to) do
-    [%SequenceFlow{from: from, to: to}, list]
+  @spec to(WE.SequenceFlow.t()) :: String.t()
+  def to(flow) do
+    flow.to
   end
 
-  @spec default_sequence_flow(list(WE.SequenceFlow.t()), String.t(), String.t()) ::
-          list(WE.SequenceFlow.t())
-  def default_sequence_flow(list, from, to) do
-    [%SequenceFlow{from: from, to: to, default: true}, list]
+  # constructors
+
+  @spec sequence_flow(String.t(), String.t()) ::
+          WE.SequenceFlow.t()
+  def sequence_flow(from, to) do
+    %SequenceFlow{from: from, to: to}
   end
 
   @spec default(String.t(), String.t()) :: WE.SequenceFlow.t()
   def default(from, to) do
     %SequenceFlow{from: from, to: to, default: true}
-  end
-
-  @spec no_default(String.t(), String.t()) :: WE.SequenceFlow.t()
-  def no_default(from, to) do
-    %SequenceFlow{from: from, to: to, default: false}
   end
 end
