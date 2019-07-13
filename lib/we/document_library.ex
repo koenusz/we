@@ -58,10 +58,18 @@ defmodule WE.DocumentLibrary do
       documents
       |> Enum.map(fn doc -> WE.Document.document_id(doc) end)
 
-    required_docs = WE.Workflow.all_required_document_ids_for_step(workflow, step_name)
+    IO.inspect(workflow)
 
-    {:reply, all_required_and_complete?(present_docs, required_docs, documents),
-     {history_id, workflow, documents, storage_providers}}
+    required_docs =
+      WE.Workflow.all_required_document_ids_for_step(workflow, step_name)
+      |> IO.inspect()
+
+    required_and_complete =
+      all_required_present?(present_docs, required_docs) and
+        all_documents_complete?(present_docs)
+
+    IO.inspect(required_and_complete)
+    {:reply, required_and_complete, {history_id, workflow, documents, storage_providers}}
   end
 
   @impl GenServer
@@ -127,17 +135,12 @@ defmodule WE.DocumentLibrary do
     end
   end
 
-  defp all_required_and_complete?(present_docs, required_docs, documents) do
-    all_required_present? = [] == required_docs -- present_docs
+  defp all_documents_complete?(present_docs) do
+    present_docs
+    |> Enum.all?(&WE.Document.is_complete?(&1))
+  end
 
-    all_complete? =
-      [] ==
-        required_docs
-        |> Enum.map(fn id ->
-          WE.Document.find(documents, id) |> WE.Document.document_is_complete?()
-        end)
-        |> Enum.filter(fn x -> not x end)
-
-    all_required_present? and all_complete?
+  defp all_required_present?(present_docs, required_docs) do
+    [] == required_docs -- present_docs
   end
 end

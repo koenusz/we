@@ -2,17 +2,24 @@ defmodule WE.WorkflowHistory do
   use TypedStruct
 
   typedstruct enforce: true, opaque: true do
-    field :id, UUID.t(), default: UUID.uuid1()
+    field :id, UUID.t()
     field :workflow, WE.Workflow.t()
     field :records, list(WE.HistoryRecord.t()), default: []
     field :storage_adapters, [atom]
+  end
+
+  # accessors
+
+  @spec workflow(WE.WorkflowHistory.t()) :: WE.Workflow.t()
+  def workflow(history) do
+    history.workflow
   end
 
   # construct
 
   @spec init(WE.Workflow.t(), [WE.StorageAdapter.t()]) :: WE.WorkflowHistory.t()
   def init(workflow, storage_adapters) do
-    %WE.WorkflowHistory{workflow: workflow, storage_adapters: storage_adapters}
+    %WE.WorkflowHistory{id: UUID.uuid1(), workflow: workflow, storage_adapters: storage_adapters}
   end
 
   @spec history_id(WE.WorkflowHistory.t()) :: UUID.t()

@@ -93,9 +93,9 @@ defmodule WE.Workflow do
 
   @spec all_required_document_ids_for_step(WE.Workflow.t(), String.t()) :: [String.t()]
   def all_required_document_ids_for_step(workflow, step_name) do
-    workflow
-    |> all_required_document_ids()
-    |> get_documents_by_step_name(step_name)
+    workflow.documents
+    |> Enum.filter(fn {_, document_type, _} -> document_type == :required end)
+    |> Enum.filter(fn {_, _, doc_step_name} -> doc_step_name == step_name end)
   end
 
   @spec all_required_document_ids(WE.Workflow.t()) :: [UUID.t()]
@@ -105,11 +105,6 @@ defmodule WE.Workflow do
       {_, _, document_type} = doc
       document_type == :required
     end)
-  end
-
-  defp get_documents_by_step_name(documents, step_name) do
-    documents
-    |> Enum.filter(fn {_, _, doc_step_name} -> doc_step_name == step_name end)
   end
 
   # create workflow

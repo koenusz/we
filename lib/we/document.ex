@@ -4,7 +4,7 @@ defmodule WE.Document do
   @type document_type :: :required | :optional
 
   typedstruct enforde: true, opaque: true do
-    field :id, String.t(), default: UUID.uuid1()
+    field :id, String.t()
     field :data, map()
     field :type, document_type(), default: :required
     field :status, document_status(), default: :complete
@@ -14,12 +14,12 @@ defmodule WE.Document do
 
   @spec document(map()) :: WE.Document.t()
   def document(%{} = data) do
-    %WE.Document{data: data}
+    %WE.Document{id: UUID.uuid1(), data: data}
   end
 
   @spec optional_document(map()) :: WE.Document.t()
   def optional_document(%{} = data) do
-    %WE.Document{data: data, type: :optional}
+    %WE.Document{id: UUID.uuid1(), data: data, type: :optional}
   end
 
   @spec document_id(WE.Document.t()) :: String.t()
@@ -32,23 +32,23 @@ defmodule WE.Document do
     doc.type
   end
 
-  @spec document_is_required?(WE.Document.t()) :: boolean
-  def document_is_required?(%WE.Document{} = doc) do
+  @spec is_required?(WE.Document.t()) :: boolean
+  def is_required?(%WE.Document{} = doc) do
     doc.type == :required
   end
 
-  @spec document_is_optional?(WE.Document.t()) :: boolean
-  def document_is_optional?(%WE.Document{} = doc) do
+  @spec is_optional?(WE.Document.t()) :: boolean
+  def is_optional?(%WE.Document{} = doc) do
     doc.type == :optional
   end
 
-  @spec document_is_complete?(WE.Document.t()) :: boolean
-  def document_is_complete?(%WE.Document{} = doc) do
+  @spec is_complete?(WE.Document.t()) :: boolean
+  def is_complete?(%WE.Document{} = doc) do
     doc.status == :complete
   end
 
-  @spec set_document_is_complete(WE.Document.t()) :: WE.Document.t()
-  def set_document_is_complete(%WE.Document{} = doc) do
+  @spec set_document_complete(WE.Document.t()) :: WE.Document.t()
+  def set_document_complete(%WE.Document{} = doc) do
     %{doc | status: :complete}
   end
 

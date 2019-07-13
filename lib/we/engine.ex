@@ -10,14 +10,16 @@ defmodule WE.Engine do
 
   @impl GenServer
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
-          {:ok, {WE.Workflow.t(), WE.WorkflowHistory.t()}}
+          {:ok, {WE.WorkflowHistory.t()}}
   def init({workflow, storage_adapters}, _opts \\ []) do
     WE.WorkflowValidator.validate(workflow)
-    {:ok, {workflow, WorkflowHistory.init(workflow, storage_adapters)}}
+    {:ok, {WorkflowHistory.init(workflow, storage_adapters)}}
   end
 
   @impl GenServer
-  def handle_call(:start, _from, {workflow, history}) do
+  def handle_call(:start, _from, {history}) do
+    workflow = WE.WorkflowHistory.workflow(history)
+
     WE.DocumentSupervisor.add_library(
       WE.WorkflowHistory.history_id(history),
       workflow,
@@ -28,16 +30,17 @@ defmodule WE.Engine do
     history = WorkflowHistory.record_event!(history, event)
     next_list = Workflow.get_next(workflow, WE.State.name(event))
 
-    reply_or_end({workflow, history, next_list})
+    reply_or_end({history, next_list})
   end
 
   @impl GenServer
-  def handle_call(:start, _from, {workflow, history, current}) do
-    {:reply, {:error, "already started"}, {workflow, history, current}}
+  def handle_call(:start, _from, {history, current}) do
+    {:reply, {:error, "already started"}, {history, current}}
   end
 
   @impl GenServer
-  def handle_call({:start_task, task_name}, _from, {workflow, history, current}) do
+  def handle_call({:start_task, task_name}, _from, {history, current}) do
+    workflow = WE.WorkflowHistory.workflow(history)
     {:ok, task} = Workflow.get_step_by_name(workflow, task_name)
 
     history =
@@ -52,11 +55,12 @@ defmodule WE.Engine do
           WE.WorkflowHistory.record_task_start!(history, task)
       end
 
-    {:reply, :ok, {workflow, history, current}}
+    {:reply, :ok, {history, current}}
   end
 
   @impl GenServer
-  def handle_call({:complete_task, task_name, sequenceflows}, _from, {workflow, history, current}) do
+  def handle_call({:complete_task, task_name, sequenceflows}, _from, {history, current}) do
+    workflow = WE.WorkflowHistory.workflow(history)
     {:ok, task} = Workflow.get_step_by_name(workflow, task_name)
     WE.State.is_task!(task)
 
@@ -81,11 +85,13 @@ defmodule WE.Engine do
            Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, task)}
       end
 
-    reply_or_end({workflow, history, next_list})
+    reply_or_end({history, next_list})
   end
 
   @impl GenServer
-  def handle_call({:message_event, event, sequenceflows}, _from, {workflow, history, current}) do
+  def handle_call({:message_event, event, sequenceflows}, _from, {history, current}) do
+    workflow = WE.WorkflowHistory.workflow(history)
+
     {history, next_list} =
       cond do
         not WE.State.event_in?(current, event) ->
@@ -110,27 +116,27 @@ defmodule WE.Engine do
            Workflow.get_next_steps_by_sequenceflows(workflow, sequenceflows, event)}
       end
 
-    reply_or_end({workflow, history, next_list})
+    reply_or_end({history, next_list})
   end
 
   @impl GenServer
-  def handle_call(:current_state, _from, {workflow, history, current}) do
-    {:reply, {:ok, current}, {workflow, history, current}}
+  def handle_call(:current_state, _from, {history, current}) do
+    {:reply, {:ok, current}, {history, current}}
   end
 
   @impl GenServer
-  def handle_call(:history, _from, {workflow, history, current}) do
-    {:reply, {:ok, history}, {workflow, history, current}}
+  def handle_call(:history, _from, {history, current}) do
+    {:reply, {:ok, history}, {history, current}}
   end
 
-  defp reply_or_end({workflow, history, next_list}) do
+  defp reply_or_end({history, next_list}) do
     case Workflow.get_end_events(next_list) do
       [] ->
-        {:reply, :ok, {workflow, history, next_list}}
+        {:reply, :ok, {history, next_list}}
 
       stops ->
         history = WorkflowHistory.record_event!(history, Enum.at(stops, 0))
-        {:reply, :ok, {workflow, history, next_list}}
+        {:reply, :ok, {history, next_list}}
     end
   end
 

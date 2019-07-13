@@ -80,7 +80,7 @@ defmodule WE.DocumentTest do
       document = WE.Document.optional_document(%{data: "optional"})
 
       workflow =
-        WE.TestWorkflowHelper.task()
+        WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
       current_state =
@@ -92,14 +92,14 @@ defmodule WE.DocumentTest do
         |> WE.Engine.current_state()
         |> elem(2)
 
-      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
     end
 
     test "complete a task with a required document" do
       document = WE.Document.document(%{data: "required"})
 
       workflow =
-        WE.TestWorkflowHelper.task()
+        WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
       current_state =
@@ -111,14 +111,14 @@ defmodule WE.DocumentTest do
         |> WE.Engine.current_state()
         |> elem(2)
 
-      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
     end
 
     test "complete a task with the optional document missing" do
       document = WE.Document.optional_document(%{data: "optional"})
 
       workflow =
-        WE.TestWorkflowHelper.task()
+        WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
       current_state =
@@ -130,26 +130,30 @@ defmodule WE.DocumentTest do
         |> WE.Engine.current_state()
         |> elem(2)
 
-      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop")]
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
     end
 
     test "complete a task with a required document missing" do
+      IO.puts("starting")
+
       document = WE.Document.document(%{data: "required"})
 
       workflow =
-        WE.TestWorkflowHelper.task()
+        WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      current_state =
+      {:ok, engine, current_state} =
         WE.Engine.start_link(workflow)
         |> elem(1)
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
         |> WE.Engine.current_state()
-        |> elem(2)
 
-      assert current_state == [WE.Workflow.get_step_by_name(workflow, "task")]
+      WE.Engine.history(engine)
+      |> IO.inspect()
+
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "task") |> elem(1)]
     end
 
     # test "find document by stage" do
