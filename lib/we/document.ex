@@ -14,12 +14,12 @@ defmodule WE.Document do
 
   @spec document(map()) :: WE.Document.t()
   def document(%{} = data) do
-    %WE.Document{id: UUID.uuid1(), data: data}
+    %WE.Document{id: WE.Helpers.id(), data: data}
   end
 
   @spec optional_document(map()) :: WE.Document.t()
   def optional_document(%{} = data) do
-    %WE.Document{id: UUID.uuid1(), data: data, type: :optional}
+    %WE.Document{id: WE.Helpers.id(), data: data, type: :optional}
   end
 
   @spec document_id(WE.Document.t()) :: String.t()

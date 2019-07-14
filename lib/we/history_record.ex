@@ -46,7 +46,7 @@ defmodule WE.HistoryRecord do
 
   @spec record_message_error(String.t()) :: WE.HistoryRecord.t()
   def record_message_error(message) do
-    %WE.HistoryRecord{id: UUID.uuid1(), message: message, type: :error}
+    %WE.HistoryRecord{id: WE.Helpers.id(), message: message, type: :error}
   end
 
   # utils

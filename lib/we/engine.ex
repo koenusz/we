@@ -4,24 +4,27 @@ defmodule WE.Engine do
   use TypedStruct
   alias WE.{Workflow, WorkflowHistory}
 
-  typedstruct enforce: true, opaque: true do
-    field :current, [State.t()]
-  end
+  # typedstruct enforce: true, opaque: true do
+  #   field :current, [State.t()]
+  # end
 
   @impl GenServer
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
-          {:ok, {WE.WorkflowHistory.t()}}
+          {:ok, WE.WorkflowHistory.t(), [WE.State.t()]}
   def init({workflow, storage_adapters}, _opts \\ []) do
     WE.WorkflowValidator.validate(workflow)
-    {:ok, {WorkflowHistory.init(workflow, storage_adapters)}}
+
+    history = WE.WorkflowHistory.init(workflow, storage_adapters)
+
+    {:ok, {history, []}}
   end
 
   @impl GenServer
-  def handle_call(:start, _from, {history}) do
+  def handle_call(:start, _from, {history, []}) do
     workflow = WE.WorkflowHistory.workflow(history)
 
     WE.DocumentSupervisor.add_library(
-      WE.WorkflowHistory.history_id(history),
+      WE.WorkflowHistory.id(history),
       workflow,
       WE.WorkflowHistory.storage_adapters(history)
     )
@@ -71,7 +74,7 @@ defmodule WE.Engine do
            current}
 
         not WE.DocumentLibrary.all_required_documents_present?(
-          WE.WorkflowHistory.history_id(history),
+          WE.WorkflowHistory.id(history),
           WE.State.name(task)
         ) ->
           {WE.WorkflowHistory.record_task_error(
@@ -102,7 +105,7 @@ defmodule WE.Engine do
            ), current}
 
         not WE.DocumentLibrary.all_required_documents_present?(
-          WE.WorkflowHistory.history_id(history),
+          WE.WorkflowHistory.id(history),
           WE.State.name(event)
         ) ->
           {WE.WorkflowHistory.record_event_error(

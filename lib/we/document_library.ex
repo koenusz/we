@@ -54,21 +54,16 @@ defmodule WE.DocumentLibrary do
         _from,
         {history_id, workflow, documents, storage_providers}
       ) do
-    present_docs =
+    present_doc_ids =
       documents
-      |> Enum.map(fn doc -> WE.Document.document_id(doc) end)
+      |> Enum.map(&WE.Document.document_id(&1))
 
-    IO.inspect(workflow)
-
-    required_docs =
-      WE.Workflow.all_required_document_ids_for_step(workflow, step_name)
-      |> IO.inspect()
+    required_doc_ids = WE.Workflow.all_required_document_ids_for_step(workflow, step_name)
 
     required_and_complete =
-      all_required_present?(present_docs, required_docs) and
-        all_documents_complete?(present_docs)
+      all_required_present?(present_doc_ids, required_doc_ids) and
+        all_documents_complete?(documents)
 
-    IO.inspect(required_and_complete)
     {:reply, required_and_complete, {history_id, workflow, documents, storage_providers}}
   end
 
@@ -117,9 +112,7 @@ defmodule WE.DocumentLibrary do
 
     documents =
       documents
-      |> Enum.filter(fn doc ->
-        not WE.Document.same_id?(doc, document)
-      end)
+      |> Enum.filter(&WE.Document.same_id?(&1, document))
 
     {:reply, :ok, {history_id, workflow, [document, documents], storage_providers}}
   end
@@ -140,7 +133,7 @@ defmodule WE.DocumentLibrary do
     |> Enum.all?(&WE.Document.is_complete?(&1))
   end
 
-  defp all_required_present?(present_docs, required_docs) do
-    [] == required_docs -- present_docs
+  defp all_required_present?(present_docs_ids, required_docs_ids) do
+    [] == required_docs_ids -- present_docs_ids
   end
 end

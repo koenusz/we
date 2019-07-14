@@ -30,4 +30,9 @@ defmodule WE.Helpers do
   def unpack_engine_tuple_value(val) do
     val
   end
+
+  @spec id :: String.t()
+  def id() do
+    Base.encode64(:crypto.strong_rand_bytes(16), padding: false)
+  end
 end

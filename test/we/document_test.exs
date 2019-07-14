@@ -57,9 +57,15 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.start_stop()
         |> WE.Workflow.add_document(required)
 
-      documents = WE.Workflow.get_documents(workflow)
+      documents = WE.Workflow.get_document_references(workflow)
 
-      assert documents == [{required.id, :required, ""}]
+      assert documents == [
+               %WE.DocumentReference{
+                 id: WE.Document.document_id(required),
+                 step_name: "",
+                 type: :required
+               }
+             ]
     end
 
     test "add a document to a step in a workflow" do
@@ -69,34 +75,21 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.start_stop()
         |> WE.Workflow.add_document(required, "start")
 
-      documents = WE.Workflow.get_documents(workflow)
+      documents = WE.Workflow.get_document_references(workflow)
 
-      assert documents == [{required.id, :required, "start"}]
+      assert documents == [
+               %WE.DocumentReference{
+                 id: WE.Document.document_id(required),
+                 step_name: "start",
+                 type: :required
+               }
+             ]
     end
   end
 
   describe "execution phase" do
     test "complete a task with an optional document" do
       document = WE.Document.optional_document(%{data: "optional"})
-
-      workflow =
-        WE.TestWorkflowHelper.service_task()
-        |> WE.Workflow.add_document(document, "task")
-
-      current_state =
-        WE.Engine.start_link(workflow)
-        |> elem(1)
-        |> WE.Engine.start_execution()
-        |> WE.Engine.start_task("task")
-        |> WE.Engine.complete_task("task")
-        |> WE.Engine.current_state()
-        |> elem(2)
-
-      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
-    end
-
-    test "complete a task with a required document" do
-      document = WE.Document.document(%{data: "required"})
 
       workflow =
         WE.TestWorkflowHelper.service_task()
@@ -133,9 +126,39 @@ defmodule WE.DocumentTest do
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
     end
 
-    test "complete a task with a required document missing" do
-      IO.puts("starting")
+    test "complete a task with a required document" do
+      document = WE.Document.document(%{data: "required"})
 
+      workflow =
+        WE.TestWorkflowHelper.service_task()
+        |> WE.Workflow.add_document(document, "task")
+
+      engine =
+        WE.Engine.start_link(workflow)
+        |> elem(1)
+        |> WE.Engine.start_execution()
+
+      history_id =
+        WE.Engine.history(engine)
+        |> elem(2)
+        |> WE.WorkflowHistory.id()
+
+      WE.DocumentLibrary.store_document(history_id, document)
+
+      {:ok, engine, current_state} =
+        engine
+        |> WE.Engine.start_task("task")
+        |> WE.Engine.complete_task("task")
+        |> WE.Engine.current_state()
+
+      # |> elem(2)
+
+      WE.Engine.history(engine)
+
+      assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
+    end
+
+    test "complete a task with a required document missing" do
       document = WE.Document.document(%{data: "required"})
 
       workflow =
@@ -151,7 +174,6 @@ defmodule WE.DocumentTest do
         |> WE.Engine.current_state()
 
       WE.Engine.history(engine)
-      |> IO.inspect()
 
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "task") |> elem(1)]
     end

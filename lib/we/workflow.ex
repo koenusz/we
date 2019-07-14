@@ -6,8 +6,8 @@ defmodule WE.Workflow do
     field :steps, list(WE.State.t()), default: []
     field :sequence_flows, list(WE.SequenceFlow.t()), default: []
 
-    field :documents,
-          list({String.t(), WE.Document.document_type(), String.t()}),
+    field :document_references,
+          list(WE.DocumentReference.t()),
           default: []
   end
 
@@ -69,16 +69,17 @@ defmodule WE.Workflow do
     get_step_by_name(workflow, WE.State.name(state))
   end
 
-  @spec get_document(WE.Workflow.t(), String.t()) :: {:ok, WE.Document.t()} | {:error, String.t()}
-  def get_document(workflow, document_id) do
-    workflow.documents
-    |> Enum.find({:error, "document not found"}, &WE.Document.has_id?(&1, document_id))
+  @spec get_document_reference(WE.Workflow.t(), String.t()) ::
+          {:ok, WE.DocumentReference.t()} | {:error, String.t()}
+  def get_document_reference(workflow, document_id) do
+    workflow.document_references
+    |> Enum.find({:error, "document not found"}, &WE.DocumentReference.has_id?(&1, document_id))
     |> WE.Helpers.ok_tuple()
   end
 
-  @spec get_documents(WE.Workflow.t()) :: [WE.Document.t()]
-  def get_documents(workflow) do
-    workflow.documents
+  @spec get_document_references(WE.Workflow.t()) :: [WE.DocumentReference.t()]
+  def get_document_references(workflow) do
+    workflow.document_references
   end
 
   @spec sequence_flows(WE.Workflow.t()) :: [WE.SequenceFlow.t()]
@@ -93,18 +94,16 @@ defmodule WE.Workflow do
 
   @spec all_required_document_ids_for_step(WE.Workflow.t(), String.t()) :: [String.t()]
   def all_required_document_ids_for_step(workflow, step_name) do
-    workflow.documents
-    |> Enum.filter(fn {_, document_type, _} -> document_type == :required end)
-    |> Enum.filter(fn {_, _, doc_step_name} -> doc_step_name == step_name end)
+    workflow.document_references
+    |> Enum.filter(&WE.DocumentReference.is_required?(&1))
+    |> Enum.filter(&WE.DocumentReference.has_name?(&1, step_name))
+    |> Enum.map(&WE.DocumentReference.id(&1))
   end
 
-  @spec all_required_document_ids(WE.Workflow.t()) :: [UUID.t()]
+  @spec all_required_document_ids(WE.Workflow.t()) :: [String.t()]
   def all_required_document_ids(workflow) do
-    workflow.documents
-    |> Enum.filter(fn doc ->
-      {_, _, document_type} = doc
-      document_type == :required
-    end)
+    workflow.document_references
+    |> Enum.filter(&WE.DocumentReference.is_required?(&1))
   end
 
   # create workflow
@@ -150,26 +149,23 @@ defmodule WE.Workflow do
     %{workflow | sequence_flows: [flow | workflow.sequence_flows]}
   end
 
-  @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t()
-  def add_document(workflow, document, step_name) do
-    %{
-      workflow
-      | documents: [
-          {WE.Document.document_id(document), WE.Document.document_type(document), step_name}
-          | workflow.documents
-        ]
-    }
-  end
+  @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t() | no_return
+  def add_document(workflow, document, step_name \\ "") do
+    workflow.document_references
+    |> Enum.any?(&WE.DocumentReference.has_name?(&1, step_name))
+    |> case do
+      true ->
+        raise WE.WorkflowError, message: "step '#{step_name}' already has a document"
 
-  @spec add_document(Workflow.t(), WE.Document.t()) :: Workflow.t()
-  def add_document(workflow, document) do
-    %{
-      workflow
-      | documents: [
-          {WE.Document.document_id(document), WE.Document.document_type(document), ""}
-          | workflow.documents
-        ]
-    }
+      _ ->
+        %{
+          workflow
+          | document_references: [
+              WE.DocumentReference.document_reference(document, step_name)
+              | workflow.document_references
+            ]
+        }
+    end
   end
 end
 

@@ -31,6 +31,6 @@ defmodule WE.LocalAdapterTest do
     WE.Adapter.Local.store_history_record("test_id", record1)
     WE.Adapter.Local.store_history_record("test_id", record2)
 
-    assert WE.Adapter.Local.find_all_history_records("test_id") == {:ok, [record1, record2]}
+    assert WE.Adapter.Local.find_all_history_records("test_id") == {:ok, [record2, record1]}
   end
 end
