@@ -30,7 +30,7 @@ defmodule WE.DocumentTest do
       WE.DocumentLibrary.store_document(@history_id, ctx.doc)
 
       assert ctx.doc ==
-               WE.DocumentLibrary.get_document(@history_id, WE.Document.document_id(ctx.doc))
+               WE.DocumentLibrary.get_document(@history_id, WE.Document.name(ctx.doc))
                |> elem(1)
     end
 
@@ -44,14 +44,14 @@ defmodule WE.DocumentTest do
       WE.DocumentLibrary.store_document(@history_id, ctx.doc)
 
       assert [ctx.doc] ==
-               WE.DocumentLibrary.all_documents_in(@history_id, [WE.Document.document_id(ctx.doc)])
+               WE.DocumentLibrary.all_documents_in(@history_id, [WE.Document.name(ctx.doc)])
                |> elem(1)
     end
   end
 
   describe "definition phase" do
     test "add a document to a workflow" do
-      required = WE.Document.document(%{data: "bla"})
+      required = WE.Document.document("required")
 
       workflow =
         WE.TestWorkflowHelper.start_stop()
@@ -61,7 +61,7 @@ defmodule WE.DocumentTest do
 
       assert documents == [
                %WE.DocumentReference{
-                 id: WE.Document.document_id(required),
+                 name: WE.Document.name(required),
                  step_name: "",
                  type: :required
                }
@@ -79,7 +79,7 @@ defmodule WE.DocumentTest do
 
       assert documents == [
                %WE.DocumentReference{
-                 id: WE.Document.document_id(required),
+                 name: WE.Document.name(required),
                  step_name: "start",
                  type: :required
                }
@@ -89,7 +89,7 @@ defmodule WE.DocumentTest do
 
   describe "execution phase" do
     test "complete a task with an optional document" do
-      document = WE.Document.optional_document(%{data: "optional"})
+      document = WE.Document.optional_document("optional")
 
       workflow =
         WE.TestWorkflowHelper.service_task()
@@ -108,7 +108,7 @@ defmodule WE.DocumentTest do
     end
 
     test "complete a task with the optional document missing" do
-      document = WE.Document.optional_document(%{data: "optional"})
+      document = WE.Document.optional_document("optional")
 
       workflow =
         WE.TestWorkflowHelper.service_task()
@@ -127,7 +127,7 @@ defmodule WE.DocumentTest do
     end
 
     test "complete a task with a required document" do
-      document = WE.Document.document(%{data: "required"})
+      document = WE.Document.document("required")
 
       workflow =
         WE.TestWorkflowHelper.service_task()

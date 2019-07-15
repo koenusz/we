@@ -32,8 +32,8 @@ defmodule WE.InMemoryStorage do
   end
 
   @spec find_document(String.t()) :: {:ok, WE.Document.t()} | {:error, String.t()}
-  def find_document(document_id) do
-    GenServer.call(__MODULE__, {:find_document, document_id})
+  def find_document(document_name) do
+    GenServer.call(__MODULE__, {:find_document, document_name})
   end
 
   @spec store_history_record(String.t(), WE.HistoryRecord.t()) ::
@@ -70,7 +70,7 @@ defmodule WE.InMemoryStorage do
     documents =
       documents
       |> Enum.filter(fn doc ->
-        not WE.Document.same_id?(doc, document)
+        not WE.Document.same_name?(doc, document)
       end)
 
     {:reply, {:ok, document},
@@ -78,11 +78,11 @@ defmodule WE.InMemoryStorage do
   end
 
   @impl GenServer
-  def handle_call({:find_document, document_id}, _from, %{
+  def handle_call({:find_document, document_name}, _from, %{
         documents: documents,
         history_record_library: library
       }) do
-    found = WE.Document.find(documents, document_id)
+    found = WE.Document.find(documents, document_name)
     {:reply, {:ok, found}, %{documents: documents, history_record_library: library}}
   end
 

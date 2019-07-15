@@ -13,8 +13,13 @@ defmodule WE.Engine do
           {:ok, WE.WorkflowHistory.t(), [WE.State.t()]}
   def init({workflow, storage_adapters}, _opts \\ []) do
     WE.WorkflowValidator.validate(workflow)
-
     history = WE.WorkflowHistory.init(workflow, storage_adapters)
+
+    WE.DocumentSupervisor.add_library(
+      WE.WorkflowHistory.id(history),
+      workflow,
+      WE.WorkflowHistory.storage_adapters(history)
+    )
 
     {:ok, {history, []}}
   end
@@ -22,12 +27,6 @@ defmodule WE.Engine do
   @impl GenServer
   def handle_call(:start, _from, {history, []}) do
     workflow = WE.WorkflowHistory.workflow(history)
-
-    WE.DocumentSupervisor.add_library(
-      WE.WorkflowHistory.id(history),
-      workflow,
-      WE.WorkflowHistory.storage_adapters(history)
-    )
 
     event = Workflow.get_start_event!(workflow)
     history = WorkflowHistory.record_event!(history, event)

@@ -5,7 +5,7 @@ defmodule WE.LocalAdapterTest do
     doc = WE.Document.document(%{})
 
     WE.Adapter.Local.store_document(doc)
-    {:ok, result} = WE.Adapter.Local.find_document(WE.Document.document_id(doc))
+    {:ok, result} = WE.Adapter.Local.find_document(WE.Document.name(doc))
 
     assert doc == result
   end
@@ -17,7 +17,7 @@ defmodule WE.LocalAdapterTest do
     updated = WE.Document.update_data(doc, %{updated: true})
     WE.Adapter.Local.update_document(updated)
 
-    {:ok, result} = WE.Adapter.Local.find_document(WE.Document.document_id(doc))
+    {:ok, result} = WE.Adapter.Local.find_document(WE.Document.name(doc))
 
     assert updated == result
   end

@@ -12,8 +12,8 @@ defmodule WE.Adapter.Local do
   end
 
   @impl WE.StorageAdapter
-  def find_document(document_id) do
-    WE.InMemoryStorage.find_document(document_id)
+  def find_document(document_name) do
+    WE.InMemoryStorage.find_document(document_name)
   end
 
   @impl WE.StorageAdapter

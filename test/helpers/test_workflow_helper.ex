@@ -1,5 +1,5 @@
 defmodule WE.TestWorkflowHelper do
-  alias WE.{SequenceFlow, Workflow}
+  alias WE.Workflow
 
   def start_stop() do
     Workflow.workflow("start stop test")

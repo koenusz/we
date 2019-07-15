@@ -56,7 +56,7 @@ defmodule WE.DocumentLibrary do
       ) do
     present_doc_ids =
       documents
-      |> Enum.map(&WE.Document.document_id(&1))
+      |> Enum.map(&WE.Document.name(&1))
 
     required_doc_ids = WE.Workflow.all_required_document_ids_for_step(workflow, step_name)
 
@@ -112,7 +112,7 @@ defmodule WE.DocumentLibrary do
 
     documents =
       documents
-      |> Enum.filter(&WE.Document.same_id?(&1, document))
+      |> Enum.filter(&WE.Document.same_name?(&1, document))
 
     {:reply, :ok, {history_id, workflow, [document, documents], storage_providers}}
   end

@@ -73,7 +73,7 @@ defmodule WE.Workflow do
           {:ok, WE.DocumentReference.t()} | {:error, String.t()}
   def get_document_reference(workflow, document_id) do
     workflow.document_references
-    |> Enum.find({:error, "document not found"}, &WE.DocumentReference.has_id?(&1, document_id))
+    |> Enum.find({:error, "document not found"}, &WE.DocumentReference.has_name?(&1, document_id))
     |> WE.Helpers.ok_tuple()
   end
 
@@ -96,8 +96,8 @@ defmodule WE.Workflow do
   def all_required_document_ids_for_step(workflow, step_name) do
     workflow.document_references
     |> Enum.filter(&WE.DocumentReference.is_required?(&1))
-    |> Enum.filter(&WE.DocumentReference.has_name?(&1, step_name))
-    |> Enum.map(&WE.DocumentReference.id(&1))
+    |> Enum.filter(&WE.DocumentReference.has_step?(&1, step_name))
+    |> Enum.map(&WE.DocumentReference.name(&1))
   end
 
   @spec all_required_document_ids(WE.Workflow.t()) :: [String.t()]
@@ -152,7 +152,7 @@ defmodule WE.Workflow do
   @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t() | no_return
   def add_document(workflow, document, step_name \\ "") do
     workflow.document_references
-    |> Enum.any?(&WE.DocumentReference.has_name?(&1, step_name))
+    |> Enum.any?(&WE.DocumentReference.has_step?(&1, step_name))
     |> case do
       true ->
         raise WE.WorkflowError, message: "step '#{step_name}' already has a document"

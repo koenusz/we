@@ -31,7 +31,7 @@ defmodule WE.HistoryRecord do
 
   @spec record_document(WE.Document.t()) :: WE.HistoryRecord.t()
   def record_document(doc) do
-    %WE.HistoryRecord{id: WE.Document.document_id(doc), type: :document}
+    %WE.HistoryRecord{id: WE.Document.name(doc), type: :document}
   end
 
   @spec record_task_error(WE.State.t(), String.t()) :: WE.HistoryRecord.t()
