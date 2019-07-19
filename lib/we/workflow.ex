@@ -1,6 +1,14 @@
 defmodule WE.Workflow do
   use TypedStruct
 
+  @moduledoc """
+    The workflow module is a module used for describing a workflow. A workflow is a collection of steps
+    tied together by sequence flows. There are two types of steps. These are events and tasks. An event is
+    a step where the workflow is notified of something. It is a single point in time.
+    A task is a step with a start, an end and a duration.
+  """
+  @moduledoc since: "0.1.0"
+
   typedstruct enforce: true, opaque: true do
     field :name, String.t()
     field :steps, list(WE.State.t()), default: []
@@ -107,48 +115,87 @@ defmodule WE.Workflow do
   end
 
   # create workflow
+
+  @doc """
+    Create a workflow.
+  """
+  @doc since: "0.1.0"
   @spec workflow(String.t()) :: WE.Workflow.t()
   def workflow(name) do
     %WE.Workflow{name: name}
   end
 
+  @doc """
+    Add a service task. This is something a system does.
+  """
+  @doc since: "0.1.0"
   @spec add_service_task(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_service_task(workflow, name) do
     %{workflow | steps: [WE.State.service_task(name) | workflow.steps]}
   end
 
+  @doc """
+    Add a human task. This is something a human does.
+  """
+  @doc since: "0.1.0"
   @spec add_human_task(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_human_task(workflow, name) do
     %{workflow | steps: [WE.State.human_task(name) | workflow.steps]}
   end
 
+  @doc """
+    The workflow receives a message.
+  """
+  @doc since: "0.1.0"
   @spec add_message_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_message_event(workflow, name) do
     %{workflow | steps: [WE.State.message_event(name) | workflow.steps]}
   end
 
+  @doc """
+    Add a starting point for a workflow.
+  """
+  @doc since: "0.1.0"
   @spec add_start_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_start_event(workflow, name) do
     %{workflow | steps: [WE.State.start_event(name) | workflow.steps]}
   end
 
+  @doc """
+    Add an endpoint for a workflow
+  """
+  @doc since: "0.1.0"
   @spec add_end_event(WE.Workflow.t(), String.t()) :: WE.Workflow.t()
   def add_end_event(workflow, name) do
     %{workflow | steps: [WE.State.end_event(name) | workflow.steps]}
   end
 
+  @doc """
+    Connect two steps to eachother by adding a sequence flow. Each step should always have one and only one outgoing
+    default sequence flow. (except stop events)
+  """
+  @doc since: "0.1.0"
   @spec add_default_sequence_flow(WE.Workflow.t(), String.t(), String.t()) :: WE.Workflow.t()
   def add_default_sequence_flow(workflow, from, to) do
     flow = WE.SequenceFlow.default(from, to)
     %{workflow | sequence_flows: [flow | workflow.sequence_flows]}
   end
 
+  @doc """
+    Add a non-default sequence flow. This is used when a step needs more than 1 outgoing sequence flow.
+  """
+  @doc since: "0.1.0"
   @spec add_sequence_flow(WE.Workflow.t(), String.t(), String.t()) :: WE.Workflow.t()
   def add_sequence_flow(workflow, from, to) do
     flow = WE.SequenceFlow.sequence_flow(from, to)
     %{workflow | sequence_flows: [flow | workflow.sequence_flows]}
   end
 
+  @doc """
+    Add a document to a step. When the step is empty the document will be added to the workflow instead.
+    Only one document can be added per step or one per workfow when added without a name.
+  """
+  @doc since: "0.1.0"
   @spec add_document(Workflow.t(), WE.Document.t(), String.t()) :: Workflow.t() | no_return
   def add_document(workflow, document, step_name \\ "") do
     workflow.document_references

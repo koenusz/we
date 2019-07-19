@@ -14,7 +14,8 @@ defmodule WE.Application do
       # Starts a worker by calling: WE.Worker.start_link(arg)
       # {WE.Worker, arg}
       {Registry, [keys: :unique, name: :document_registry]},
-      WE.DocumentSupervisor
+      WE.DocumentSupervisor,
+      %{id: WE.EngineSupervisor, start: {WE.EngineSupervisor, :start_link, [storage_adapters]}}
     ]
 
     # add an in memory storage provider in case none are defined.

@@ -1,7 +1,14 @@
 defmodule WE.Document do
   use TypedStruct
 
+  @moduledoc """
+    This module represents a piece of required or optional data that can be attached to
+    a workflow step or a workflow in general.
+  """
+  @moduledoc since: "0.1.0"
+
   @type document_type :: :required | :optional
+  @type document_status :: :complete | :incomplete
 
   typedstruct enforde: true, opaque: true do
     field :name, String.t()
@@ -10,21 +17,43 @@ defmodule WE.Document do
     field :status, document_status(), default: :complete
   end
 
-  @type document_status :: :complete | :incomplete
+  @doc """
+    Create a document. By default a document is required.
 
+    The same document name can only be used once per workflow.
+  """
+  @doc since: "0.1.0"
   @spec document(String.t()) :: WE.Document.t()
   def document(name) do
     %WE.Document{name: name, data: %{}}
   end
 
+  @doc """
+    Create an optional document.
+
+  """
+  @doc since: "0.1.0"
   @spec optional_document(String.t()) :: WE.Document.t()
   def optional_document(name) do
     %WE.Document{name: name, data: %{}, type: :optional}
   end
 
+  @doc """
+  Retrieve the name form a document struct.
+  """
+  @doc since: "0.1.0"
   @spec name(WE.Document.t()) :: String.t()
   def name(%WE.Document{} = doc) do
     doc.name
+  end
+
+  @doc """
+    Retrieve the data attached to this document.
+  """
+  @doc since: "0.1.0"
+  @spec data(WE.Document.t()) :: map()
+  def data(%WE.Document{} = doc) do
+    doc.data
   end
 
   @spec type(WE.Document.t()) :: document_type()

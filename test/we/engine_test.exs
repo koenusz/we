@@ -3,6 +3,22 @@ defmodule WE.EngineTest do
 
   alias WE.{Workflow, Engine, TestWorkflowHelper}
 
+
+  describe "test supervision tree" do
+    test "when an engine stops the document library should stop too" do
+        # currently when it crashes it creates a new one, maybe we can reattach it??
+    end
+
+    test "when the document library crashes the engine should stay alive" do
+
+    end
+
+    test "when an engine is restarted the current state and document library should be revived from the storage provider" do
+
+    end
+
+  end
+
   test "start stop" do
     workflow = TestWorkflowHelper.start_stop()
 
