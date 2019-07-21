@@ -61,9 +61,9 @@ There are two steps that need to be taken before a workflow is running. The engi
 this is one it needs to be started.
 
 ```elixir
-{:ok, engine} =  init_engine("your business_id", my_workflow)
+{:ok, engine_pid} =  init_engine("your business_id", my_workflow)
 
-engine
+"your business_id"
 |> start_engine("your business_id")
 
 ```

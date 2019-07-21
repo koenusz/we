@@ -5,7 +5,7 @@ defmodule WE.Engine do
   @impl GenServer
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
           {:ok, WE.WorkflowHistory.t(), [WE.State.t()]}
-  def init({storage_adapters, [business_id, workflow]}, _opts \\ []) do
+  def init({workflow, storage_adapters}, _opts \\ []) do
     WE.WorkflowValidator.validate(workflow)
     history = WE.WorkflowHistory.init(workflow, storage_adapters)
 
@@ -138,52 +138,55 @@ defmodule WE.Engine do
 
   # client
 
-  @spec start_link(WE.Workflow.t(), [WE.StorageProvider.t()]) ::
+  @spec start_link(String.t(), WE.Workflow.t(), [WE.StorageProvider.t()]) ::
           :ignore | {:error, any()} | {:ok, pid()}
-  def start_link(workflow, storage_adapters \\ []) do
-    GenServer.start_link(__MODULE__, {workflow, storage_adapters})
+  def start_link(storage_adapters, business_id, workflow) do
+    GenServer.start_link(__MODULE__, {workflow, storage_adapters}, name: via_tuple(business_id))
   end
 
-  @spec start_execution(pid) :: pid
-  def start_execution(engine) do
-    :ok = GenServer.call(engine, :start)
-    engine
+  @spec start_execution(String.t()) :: String.t()
+  def start_execution(business_id) do
+    :ok = GenServer.call(via_tuple(business_id), :start)
+    business_id
   end
 
-  @spec message_event(pid, State.t(), [WE.SequenceFlow.t()]) :: pid
-  def message_event(engine, event, sequenceflows \\ []) do
-    :ok = GenServer.call(engine, {:message_event, event, sequenceflows})
-    engine
+  @spec message_event(String.t(), State.t(), [WE.SequenceFlow.t()]) :: String.t()
+  def message_event(business_id, event, sequenceflows \\ []) do
+    :ok = GenServer.call(via_tuple(business_id), {:message_event, event, sequenceflows})
+    business_id
   end
 
-  @spec start_task(pid, String.t()) :: pid
-  def start_task(engine, task) when is_binary(task) do
-    :ok = GenServer.call(engine, {:start_task, task})
-    engine
+  @spec start_task(String.t(), String.t()) :: String.t()
+  def start_task(business_id, task) when is_binary(task) do
+    :ok = GenServer.call(via_tuple(business_id), {:start_task, task})
+    business_id
   end
 
-  @spec start_task(pid, WE.State.t()) :: pid
-  def start_task(engine, task) do
+  @spec start_task(String.t(), WE.State.t()) :: String.t()
+  def start_task(business_id, task) do
     WE.State.is_task!(task)
-    :ok = GenServer.call(engine, {:start_task, WE.State.name(task)})
-    engine
+    :ok = GenServer.call(via_tuple(business_id), {:start_task, WE.State.name(task)})
+    business_id
   end
 
-  @spec complete_task(pid, String.t(), [WE.SequenceFlow.t()]) :: pid
-  def complete_task(engine, task, sequenceflows \\ []) do
-    :ok = GenServer.call(engine, {:complete_task, task, sequenceflows})
-    engine
+  @spec complete_task(String.t(), String.t(), [WE.SequenceFlow.t()]) :: String.t()
+  def complete_task(business_id, task, sequenceflows \\ []) do
+    :ok = GenServer.call(via_tuple(business_id), {:complete_task, task, sequenceflows})
+    business_id
   end
 
-  @spec current_state(pid()) :: {:ok, pid, term()}
-  def current_state(engine) do
-    {:ok, current_state} = GenServer.call(engine, :current_state)
-    {:ok, engine, current_state}
+  @spec current_state(String.t()) :: {:ok, String.t(), term()}
+  def current_state(business_id) do
+    {:ok, current_state} = GenServer.call(via_tuple(business_id), :current_state)
+    {:ok, business_id, current_state}
   end
 
-  @spec history(pid()) :: {:ok, pid, WE.WorkflowHistory.t()}
-  def history(engine) do
-    {:ok, history} = GenServer.call(engine, :history)
-    {:ok, engine, history}
+  @spec history(String.t()) :: {:ok, String.t(), WE.WorkflowHistory.t()}
+  def history(business_id) do
+    {:ok, history} = GenServer.call(via_tuple(business_id), :history)
+    {:ok, business_id, history}
   end
+
+  # registry lookup handler
+  defp via_tuple(business_id), do: {:via, Registry, {:engine_registry, business_id}}
 end

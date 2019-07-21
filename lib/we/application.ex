@@ -5,16 +5,25 @@ defmodule WE.Application do
 
   use Application
 
+  require Logger
+
   def start(_type, args) do
     # List all child processes to be supervised
 
-
-    case Keyword.fetch(args, :storage_adapters) do
-      {:ok, storage_adapters} ->
+    storage_adapters =
+      case Keyword.fetch(args, :storage_adapters) do
+        {:ok, storage_adapters} ->
           storage_adapters
-          :error -> []
 
+        :error ->
+          []
+      end
 
+    storage_adapters =
+      if storage_adapters == [] do
+        Logger.warn("No storage adapter found. Adding in memory storage")
+        [WE.Adapter.Local]
+      end
 
     children = [
       # Starts a worker by calling: WE.Worker.start_link(arg)
@@ -25,11 +34,10 @@ defmodule WE.Application do
       %{id: WE.EngineSupervisor, start: {WE.EngineSupervisor, :start_link, [storage_adapters]}}
     ]
 
-    # add an in memory storage provider in case none are defined.
+    # add an in memory storage in case the Local Adapter is used are defined.
     children =
-      case storage_adapters do
-        [] ->
-          [{WE.InMemoryStorage, []} | children]
+      if Enum.member?(storage_adapters, WE.Adapter.Local) do
+        [{WE.InMemoryStorage, []} | children]
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

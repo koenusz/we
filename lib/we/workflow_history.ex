@@ -109,7 +109,7 @@ defmodule WE.WorkflowHistory do
 
   defp update_records(history, record) do
     history.storage_adapters
-    |> Enum.each(fn sa -> sa.store_history_record(record) end)
+    |> Enum.each(fn sa -> sa.store_history_record(id(history), record) end)
 
     %{history | records: [record | history.records]}
   end

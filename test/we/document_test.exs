@@ -2,6 +2,8 @@ defmodule WE.DocumentTest do
   use ExUnit.Case, async: true
 
   @history_id "123"
+  @business_id "test id"
+  @storage_adapters [WE.Adapter.Local]
 
   setup_all do
     wf = WE.TestWorkflowHelper.start_stop()
@@ -95,9 +97,10 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+
       current_state =
-        WE.Engine.start_link(workflow)
-        |> elem(1)
+        @business_id
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
@@ -114,9 +117,10 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+
       current_state =
-        WE.Engine.start_link(workflow)
-        |> elem(1)
+        @business_id
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
@@ -133,27 +137,23 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      engine =
-        WE.Engine.start_link(workflow)
-        |> elem(1)
-        |> WE.Engine.start_execution()
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+
+      @business_id
+      |> WE.Engine.start_execution()
 
       history_id =
-        WE.Engine.history(engine)
+        WE.Engine.history(@business_id)
         |> elem(2)
         |> WE.WorkflowHistory.id()
 
       WE.DocumentLibrary.store_document(history_id, document)
 
-      {:ok, engine, current_state} =
-        engine
+      {:ok, @business_id, current_state} =
+        @business_id
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
         |> WE.Engine.current_state()
-
-      # |> elem(2)
-
-      WE.Engine.history(engine)
 
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "stop") |> elem(1)]
     end
@@ -165,15 +165,14 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, engine, current_state} =
-        WE.Engine.start_link(workflow)
-        |> elem(1)
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+
+      {:ok, @business_id, current_state} =
+        @business_id
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
         |> WE.Engine.current_state()
-
-      WE.Engine.history(engine)
 
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "task") |> elem(1)]
     end
