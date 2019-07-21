@@ -5,16 +5,23 @@ defmodule WE.Application do
 
   use Application
 
-  def start(_type, _args) do
+  def start(_type, args) do
     # List all child processes to be supervised
 
-    storage_adapters = []
+
+    case Keyword.fetch(args, :storage_adapters) do
+      {:ok, storage_adapters} ->
+          storage_adapters
+          :error -> []
+
+
 
     children = [
       # Starts a worker by calling: WE.Worker.start_link(arg)
       # {WE.Worker, arg}
       {Registry, [keys: :unique, name: :document_registry]},
       WE.DocumentSupervisor,
+      {Registry, [keys: :unique, name: :engine_registry]},
       %{id: WE.EngineSupervisor, start: {WE.EngineSupervisor, :start_link, [storage_adapters]}}
     ]
 
@@ -23,7 +30,6 @@ defmodule WE.Application do
       case storage_adapters do
         [] ->
           [{WE.InMemoryStorage, []} | children]
-          # _ -> children
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

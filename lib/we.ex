@@ -30,7 +30,7 @@ defmodule WE do
     by defining the next state of the engine by passing a list of the next states.
   """
   @doc since: "0.1.0"
-  def receive_event(business_id, event_name, next_steps \\ []) do
+  def handle_event(business_id, event_name, next_steps \\ []) do
   end
 
   @doc """

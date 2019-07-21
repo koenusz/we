@@ -17,7 +17,7 @@ defmodule WE.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {WE.Application, []}
+      mod: {WE.Application, [storage_adapters: []]}
     ]
   end
 
