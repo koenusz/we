@@ -83,8 +83,42 @@ defmodule WE.EngineTest do
   end
 
   test "received event, error not in current state" do
+    workflow = WE.TestWorkflowHelper.message_split()
+    init_and_start_engine(workflow)
+    {:ok, task} = Workflow.get_step_by_name(workflow, "message2")
+
+    Engine.start_task(@business_id, "message2")
+
+    {:ok, _pid, history} = Engine.history(@business_id)
+
+    assert Enum.member?(
+             history.records,
+             WE.HistoryRecord.record_task_error(task, "task message2 not in current state")
+           )
   end
 
   test "received task, error not in current state" do
+    workflow = WE.TestWorkflowHelper.task_event()
+    init_and_start_engine(workflow)
+    {:ok, event} = Workflow.get_step_by_name(workflow, "event")
+
+    Engine.message_event(@business_id, "event")
+
+    {:ok, _pid, history} = Engine.history(@business_id)
+
+    assert Enum.member?(
+             history.records,
+             WE.HistoryRecord.record_event_error(
+               event,
+               "event not in current state"
+             )
+           )
+  end
+
+  defp init_and_start_engine(workflow) do
+    {:ok, _engine} = Engine.start_link(@storage_adapters, @business_id, workflow)
+
+    @business_id
+    |> Engine.start_execution()
   end
 end

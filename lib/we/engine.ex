@@ -45,7 +45,11 @@ defmodule WE.Engine do
           WE.WorkflowHistory.record_task_error(history, task, "already started")
 
         not WE.State.task_in?(current, task) ->
-          WE.WorkflowHistory.record_task_error(history, task, "task not in current state")
+          WE.WorkflowHistory.record_task_error(
+            history,
+            task,
+            "task #{task_name} not in current state"
+          )
 
         true ->
           WE.WorkflowHistory.record_task_start!(history, task)
@@ -63,8 +67,11 @@ defmodule WE.Engine do
     {history, next_list} =
       cond do
         not WE.State.task_in?(current, task) ->
-          {WE.WorkflowHistory.record_task_error(history, task, "task not in current state"),
-           current}
+          {WE.WorkflowHistory.record_task_error(
+             history,
+             task,
+             "task #{task_name} not in current state"
+           ), current}
 
         not WE.DocumentLibrary.all_required_documents_present?(
           WE.WorkflowHistory.id(history),
@@ -85,8 +92,10 @@ defmodule WE.Engine do
   end
 
   @impl GenServer
-  def handle_call({:message_event, event, sequenceflows}, _from, {history, current}) do
+  def handle_call({:message_event, event_name, sequenceflows}, _from, {history, current}) do
     workflow = WE.WorkflowHistory.workflow(history)
+    {:ok, event} = WE.Workflow.get_step_by_name(workflow, event_name)
+    WE.State.is_event!(event)
 
     {history, next_list} =
       cond do
@@ -150,9 +159,10 @@ defmodule WE.Engine do
     business_id
   end
 
-  @spec message_event(String.t(), State.t(), [WE.SequenceFlow.t()]) :: String.t()
-  def message_event(business_id, event, sequenceflows \\ []) do
-    :ok = GenServer.call(via_tuple(business_id), {:message_event, event, sequenceflows})
+  @spec message_event(String.t(), String.t(), [WE.SequenceFlow.t()]) :: String.t()
+  def message_event(business_id, event_name, sequenceflows \\ []) when is_binary(event_name) do
+    :ok = GenServer.call(via_tuple(business_id), {:message_event, event_name, sequenceflows})
+
     business_id
   end
 

@@ -29,6 +29,17 @@ defmodule WE.TestWorkflowHelper do
     |> Workflow.add_default_sequence_flow("message2", "stop")
   end
 
+  def task_event do
+    Workflow.workflow("message task_event")
+    |> Workflow.add_start_event("start")
+    |> Workflow.add_service_task("task")
+    |> Workflow.add_message_event("event")
+    |> Workflow.add_end_event("stop")
+    |> Workflow.add_default_sequence_flow("start", "task")
+    |> Workflow.add_default_sequence_flow("task", "event")
+    |> Workflow.add_default_sequence_flow("event", "stop")
+  end
+
   def service_task do
     Workflow.workflow("service task test")
     |> Workflow.add_start_event("start")

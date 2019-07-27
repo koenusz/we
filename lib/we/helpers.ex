@@ -1,7 +1,10 @@
 defmodule WE.Helpers do
   @spec ok_tuple(any) :: {:ok, any}
   def ok_tuple(val) do
-    {:ok, val}
+    case val do
+      {:error, _} -> val
+      _ -> {:ok, val}
+    end
   end
 
   @spec unpack_ok_tuple(any) :: any

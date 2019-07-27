@@ -43,8 +43,12 @@ defmodule WE.State do
     true
   end
 
-  def is_event!(state) do
+  def is_event!(%WE.State{} = state) do
     raise "#{state.name} is not an event"
+  end
+
+  def is_event!(state) do
+    raise "#{inspect(state)} is not a state struct event"
   end
 
   @spec is_task!(WE.State.t()) :: boolean
@@ -52,8 +56,12 @@ defmodule WE.State do
     true
   end
 
-  def is_task!(state) do
+  def is_task!(%WE.State{} = state) do
     raise "#{state.name} is not an event"
+  end
+
+  def is_task!(state) do
+    raise "#{inspect(state)} is not a state struct event"
   end
 
   @spec is_start_event?(WE.State.t()) :: boolean
@@ -74,10 +82,12 @@ defmodule WE.State do
   @spec event_in?([WE.State.t()], WE.State.t()) :: boolean
   def event_in?(list, %WE.State{type: :event} = state) do
     list
-    |> Enum.find(false, fn step ->
-      same_name?(step, state)
-    end)
+    |> Enum.member?(state)
   end
+
+  # def event_in?(_list, _state) do
+  #   false
+  # end
 
   @spec task_in?([WE.State.t()], WE.State.t()) :: boolean
   def task_in?(list, %WE.State{type: :task} = state) do
