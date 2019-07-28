@@ -1,21 +1,15 @@
 defmodule WE.DocumentTest do
   use ExUnit.Case, async: true
 
-  @history_id "123"
-  @business_id "test id"
   @storage_adapters [WE.Adapter.Local]
-
-  setup_all do
-    wf = WE.TestWorkflowHelper.start_stop()
-    WE.DocumentSupervisor.add_library("123", wf, [WE.Adapter.Local])
-    :ok
-  end
 
   describe "registry" do
     setup do
       wf = WE.TestWorkflowHelper.start_stop()
       doc = WE.Document.document("setup")
-      [wf: wf, doc: doc]
+      history_id = WE.Helpers.id()
+      WE.DocumentSupervisor.add_library(history_id, wf, [WE.Adapter.Local])
+      %{wf: wf, doc: doc, history_id: history_id}
     end
 
     test "add library", wf do
@@ -23,30 +17,30 @@ defmodule WE.DocumentTest do
       assert is_pid(pid)
     end
 
-    test "add library same id", wf do
-      {:error, {:already_started, pid}} = WE.DocumentSupervisor.add_library("123", wf, [])
+    test "add library same id", %{wf: wf, history_id: history_id} do
+      {:error, {:already_started, pid}} = WE.DocumentSupervisor.add_library(history_id, wf, [])
       assert is_pid(pid)
     end
 
-    test "store and find a document in the library", ctx do
-      WE.DocumentLibrary.store_document(@history_id, ctx.doc)
+    test "store and find a document in the library", %{history_id: history_id, doc: doc} do
+      WE.DocumentLibrary.store_document(history_id, doc)
 
-      assert ctx.doc ==
-               WE.DocumentLibrary.get_document(@history_id, WE.Document.name(ctx.doc))
+      assert doc ==
+               WE.DocumentLibrary.get_document(history_id, WE.Document.name(doc))
                |> elem(1)
     end
 
-    test "find with empty library" do
+    test "find with empty library", %{history_id: history_id} do
       assert [error: "not found"] ==
-               WE.DocumentLibrary.all_documents_in(@history_id, ["not present"])
+               WE.DocumentLibrary.all_documents_in(history_id, ["not present"])
                |> elem(1)
     end
 
-    test "find library", ctx do
-      WE.DocumentLibrary.store_document(@history_id, ctx.doc)
+    test "find library", %{history_id: history_id, doc: doc} do
+      WE.DocumentLibrary.store_document(history_id, doc)
 
-      assert [ctx.doc] ==
-               WE.DocumentLibrary.all_documents_in(@history_id, [WE.Document.name(ctx.doc)])
+      assert [doc] ==
+               WE.DocumentLibrary.all_documents_in(history_id, [WE.Document.name(doc)])
                |> elem(1)
     end
   end
@@ -92,15 +86,16 @@ defmodule WE.DocumentTest do
   describe "execution phase" do
     test "complete a task with an optional document" do
       document = WE.Document.optional_document("optional")
+      business_id = WE.Helpers.id()
 
       workflow =
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [business_id, workflow])
 
       current_state =
-        @business_id
+        business_id
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
@@ -112,15 +107,16 @@ defmodule WE.DocumentTest do
 
     test "complete a task with the optional document missing" do
       document = WE.Document.optional_document("optional")
+      business_id = WE.Helpers.id()
 
       workflow =
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [business_id, workflow])
 
       current_state =
-        @business_id
+        business_id
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
@@ -132,25 +128,22 @@ defmodule WE.DocumentTest do
 
     test "complete a task with a required document" do
       document = WE.Document.document("required")
+      business_id = WE.Helpers.id()
 
       workflow =
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [business_id, workflow])
 
-      @business_id
+      business_id
       |> WE.Engine.start_execution()
+      |> WE.Engine.history()
 
-      history_id =
-        WE.Engine.history(@business_id)
-        |> elem(2)
-        |> WE.WorkflowHistory.id()
+      WE.DocumentLibrary.store_document(business_id, document)
 
-      WE.DocumentLibrary.store_document(history_id, document)
-
-      {:ok, @business_id, current_state} =
-        @business_id
+      {:ok, _, current_state} =
+        business_id
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
         |> WE.Engine.current_state()
@@ -160,15 +153,16 @@ defmodule WE.DocumentTest do
 
     test "complete a task with a required document missing" do
       document = WE.Document.document("required")
+      business_id = WE.Helpers.id()
 
       workflow =
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [business_id, workflow])
 
-      {:ok, @business_id, current_state} =
-        @business_id
+      {:ok, _, current_state} =
+        business_id
         |> WE.Engine.start_execution()
         |> WE.Engine.start_task("task")
         |> WE.Engine.complete_task("task")
