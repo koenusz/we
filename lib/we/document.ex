@@ -38,6 +38,15 @@ defmodule WE.Document do
     %WE.Document{name: name, data: %{}, type: :optional}
   end
 
+  @spec from_reference(WE.DocumentReference.t()) :: WE.Document.t()
+  def from_reference(ref) do
+    %WE.Document{
+      name: WE.DocumentReference.name(ref),
+      data: %{},
+      type: WE.DocumentReference.type(ref)
+    }
+  end
+
   @doc """
   Retrieve the name form a document struct.
   """
@@ -96,13 +105,13 @@ defmodule WE.Document do
     doc.name == document_name
   end
 
-  @spec find([Document.t()], String.t()) :: Document.t()
+  @spec find([WE.Document.t()], String.t()) :: WE.Document.t()
   def find(documents, name) do
     documents
     |> Enum.find({:error, "not found"}, &has_name?(&1, name))
   end
 
-  @spec update_data(Document.t(), term()) :: Document.t()
+  @spec update_data(WE.Document.t(), term()) :: WE.Document.t()
   def update_data(document, data) do
     %{document | data: data}
   end

@@ -197,6 +197,21 @@ defmodule WE.Engine do
     {:ok, business_id, history}
   end
 
+  @spec create_document(String.t(), String.t(), map()) :: {:ok, String.t(), WE.Document.t()}
+  def create_document(business_id, document_name, data) do
+    {:ok, history} = GenServer.call(via_tuple(business_id), :history)
+
+    document =
+      history
+      |> WE.WorkflowHistory.workflow()
+      |> WE.Workflow.get_document_reference(document_name)
+      |> elem(1)
+      |> WE.Document.from_reference()
+      |> WE.Document.update_data(data)
+
+    {:ok, WE.WorkflowHistory.id(history), document}
+  end
+
   # registry lookup handler
   defp via_tuple(business_id), do: {:via, Registry, {:engine_registry, business_id}}
 end

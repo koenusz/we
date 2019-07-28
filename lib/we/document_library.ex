@@ -20,9 +20,14 @@ defmodule WE.DocumentLibrary do
     GenServer.call(via_tuple(history_id), {:get, document_id})
   end
 
+  @spec all_documents(String.t()) :: {:ok, [WE.Document.t()]}
+  def all_documents(history_id) do
+    GenServer.call(via_tuple(history_id), {:get_all})
+  end
+
   @spec all_documents_in(String.t(), [String.t()]) :: {:ok, [WE.Document.t()]}
   def all_documents_in(history_id, document_ids) do
-    GenServer.call(via_tuple(history_id), {:get_all, document_ids})
+    GenServer.call(via_tuple(history_id), {:get_all_in, document_ids})
   end
 
   @spec all_required_documents_present?(String.t(), String.t()) :: boolean
@@ -93,7 +98,16 @@ defmodule WE.DocumentLibrary do
 
   @impl GenServer
   def handle_call(
-        {:get_all, document_ids},
+        {:get_all},
+        _from,
+        {history_id, workflow, documents, storage_providers}
+      ) do
+    {:reply, documents, {history_id, workflow, documents, storage_providers}}
+  end
+
+  @impl GenServer
+  def handle_call(
+        {:get_all_in, document_ids},
         _from,
         {history_id, workflow, documents, storage_providers}
       ) do

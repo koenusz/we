@@ -21,6 +21,11 @@ defmodule WE.DocumentReference do
     ref.name
   end
 
+  @spec type(WE.DocumentReference.t()) :: WE.Document.document_type()
+  def type(ref) do
+    ref.type
+  end
+
   @spec has_name?(WE.DocumentReference.t(), String.t()) :: boolean
   def has_name?(ref, name) do
     ref.name == name

@@ -159,7 +159,7 @@ defmodule WE.DocumentTest do
     end
 
     test "complete a task with a required document missing" do
-      document = WE.Document.document(%{data: "required"})
+      document = WE.Document.document("required")
 
       workflow =
         WE.TestWorkflowHelper.service_task()
@@ -176,17 +176,5 @@ defmodule WE.DocumentTest do
 
       assert current_state == [WE.Workflow.get_step_by_name(workflow, "task") |> elem(1)]
     end
-
-    # test "find document by stage" do
-    #   assert false
-    # end
-
-    # test "list complete/incomplete documents for the workflow" do
-    #   assert false
-    # end
-
-    # test "check if a workflow has all required documents" do
-    #   assert false
-    # end
   end
 end
