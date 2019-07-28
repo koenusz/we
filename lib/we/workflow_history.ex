@@ -17,11 +17,21 @@ defmodule WE.WorkflowHistory do
 
   # construct
 
-  @spec init(WE.Workflow.t(), [module()]) :: WE.WorkflowHistory.t()
-  def init(workflow, storage_adapters) do
+  @spec init(String.t(), WE.Workflow.t(), [module()]) :: WE.WorkflowHistory.t()
+  def init(business_id, workflow, storage_adapters) do
+    {:ok, records} =
+      case storage_adapters do
+        [] ->
+          {:ok, []}
+
+        [h | _t] ->
+          h.find_all_history_records(business_id)
+      end
+
     %WE.WorkflowHistory{
-      id: WE.Helpers.id(),
+      id: business_id,
       workflow: workflow,
+      records: records,
       storage_adapters: storage_adapters
     }
   end

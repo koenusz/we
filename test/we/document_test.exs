@@ -14,7 +14,7 @@ defmodule WE.DocumentTest do
   describe "registry" do
     setup do
       wf = WE.TestWorkflowHelper.start_stop()
-      doc = WE.Document.document(%{})
+      doc = WE.Document.document("setup")
       [wf: wf, doc: doc]
     end
 
@@ -97,7 +97,7 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
 
       current_state =
         @business_id
@@ -117,7 +117,7 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
 
       current_state =
         @business_id
@@ -137,7 +137,7 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
 
       @business_id
       |> WE.Engine.start_execution()
@@ -165,7 +165,7 @@ defmodule WE.DocumentTest do
         WE.TestWorkflowHelper.service_task()
         |> WE.Workflow.add_document(document, "task")
 
-      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, @business_id, workflow)
+      {:ok, _pid} = WE.Engine.start_link(@storage_adapters, [@business_id, workflow])
 
       {:ok, @business_id, current_state} =
         @business_id

@@ -5,12 +5,13 @@ defmodule WE.Engine do
   @impl GenServer
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
           {:ok, WE.WorkflowHistory.t(), [WE.State.t()]}
-  def init({workflow, storage_adapters}, _opts \\ []) do
+  def init({business_id, workflow, storage_adapters}, _opts \\ []) do
     WE.WorkflowValidator.validate(workflow)
-    history = WE.WorkflowHistory.init(workflow, storage_adapters)
+
+    history = WE.WorkflowHistory.init(business_id, workflow, storage_adapters)
 
     WE.DocumentSupervisor.add_library(
-      WE.WorkflowHistory.id(history),
+      business_id,
       workflow,
       WE.WorkflowHistory.storage_adapters(history)
     )
@@ -147,10 +148,17 @@ defmodule WE.Engine do
 
   # client
 
-  @spec start_link(String.t(), WE.Workflow.t(), [WE.StorageProvider.t()]) ::
-          :ignore | {:error, any()} | {:ok, pid()}
+  @spec start_link([module()], [...]) :: :ignore | {:error, any} | {:ok, pid}
+  def start_link(storage_adapters, [business_id, workflow]) do
+    start_link(storage_adapters, business_id, workflow)
+  end
+
+  @spec start_link([module()], String.t(), WE.Workflow.t()) ::
+          :ignore | {:error, any} | {:ok, pid}
   def start_link(storage_adapters, business_id, workflow) do
-    GenServer.start_link(__MODULE__, {workflow, storage_adapters}, name: via_tuple(business_id))
+    GenServer.start_link(__MODULE__, {business_id, workflow, storage_adapters},
+      name: via_tuple(business_id)
+    )
   end
 
   @spec start_execution(String.t()) :: String.t()

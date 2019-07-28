@@ -105,7 +105,7 @@ defmodule WE.InMemoryStorage do
       }) do
     records =
       library
-      |> Map.get(history_id, {:error, "not found for #{history_id}"})
+      |> Map.get(history_id, [])
 
     {:reply, {:ok, records}, %{documents: documents, history_record_library: library}}
   end

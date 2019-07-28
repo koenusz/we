@@ -22,7 +22,7 @@ defmodule WE.EngineTest do
   test "start stop" do
     workflow = TestWorkflowHelper.start_stop()
 
-    {:ok, _engine} = Engine.start_link(@storage_adapters, @business_id, workflow)
+    {:ok, _engine} = Engine.start_link(@storage_adapters, [@business_id, workflow])
 
     @business_id
     |> Engine.start_execution()
@@ -34,7 +34,7 @@ defmodule WE.EngineTest do
   test "complete task with default flow" do
     workflow = TestWorkflowHelper.service_task()
     {:ok, task} = Workflow.get_step_by_name(workflow, "task")
-    {:ok, _engine} = Engine.start_link(@storage_adapters, @business_id, workflow)
+    {:ok, _engine} = Engine.start_link(@storage_adapters, [@business_id, workflow])
 
     @business_id
     |> Engine.start_execution()
@@ -116,7 +116,7 @@ defmodule WE.EngineTest do
   end
 
   defp init_and_start_engine(workflow) do
-    {:ok, _engine} = Engine.start_link(@storage_adapters, @business_id, workflow)
+    {:ok, _engine} = Engine.start_link(@storage_adapters, [@business_id, workflow])
 
     @business_id
     |> Engine.start_execution()
