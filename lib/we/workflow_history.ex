@@ -1,5 +1,6 @@
 defmodule WE.WorkflowHistory do
   use TypedStruct
+  @moduledoc false
 
   typedstruct enforce: true, opaque: true do
     field :id, String.t()

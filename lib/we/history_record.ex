@@ -1,6 +1,6 @@
 defmodule WE.HistoryRecord do
   use TypedStruct
-
+  @moduledoc false
   @type record_type :: :task_start | :task_complete | :event | :document | :error
 
   typedstruct enforce: true, opaque: true do

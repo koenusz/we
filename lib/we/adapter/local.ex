@@ -1,5 +1,6 @@
 defmodule WE.Adapter.Local do
   @behaviour WE.StorageAdapter
+  @moduledoc false
 
   @impl WE.StorageAdapter
   def store_document(doc) do

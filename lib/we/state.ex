@@ -1,6 +1,6 @@
 defmodule WE.State do
   use TypedStruct
-
+  @moduledoc false
   @type task_type :: :service | :human
   @type event_type :: :start | :end | :message
   @type state_type :: :task | :event

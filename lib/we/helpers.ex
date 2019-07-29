@@ -1,4 +1,5 @@
 defmodule WE.Helpers do
+  @moduledoc false
   @spec ok_tuple(any) :: {:ok, any}
   def ok_tuple(val) do
     case val do

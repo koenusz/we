@@ -1,7 +1,7 @@
 defmodule WE.DocumentLibrary do
   use GenServer
   use TypedStruct
-
+  @moduledoc false
   @document_registry_name :document_registry
 
   # client

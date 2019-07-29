@@ -17,7 +17,7 @@ defmodule WE.StorageAdapter do
   @type document_name :: String.t()
 
   @typedoc """
-    The unique identifier of a history record. This can be any string.
+    The unique identifier of a history record. This id is equal to the business_id.
   """
   @typedoc since: "0.1.0"
   @type history_id :: String.t()

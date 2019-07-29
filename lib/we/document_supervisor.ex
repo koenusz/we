@@ -1,6 +1,6 @@
 defmodule WE.DocumentSupervisor do
   use DynamicSupervisor
-
+  @moduledoc false
   def start_link(_arg) do
     DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
   end

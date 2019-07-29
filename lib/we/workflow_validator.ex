@@ -1,4 +1,5 @@
 defmodule WE.WorkflowValidator do
+  @moduledoc false
   @spec validate(WE.Workflow.t()) :: WE.Workflow.t() | no_return
   def validate(workflow) do
     workflow

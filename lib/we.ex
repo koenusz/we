@@ -1,6 +1,12 @@
 defmodule WE do
   @moduledoc """
     This is the WorkflowEngine api module.
+    For more info see the [README](readme.html)
+
+    The business id is a unique identifier, chosen form the problem domain of the
+    application wherein this library is used. It serves to both uniquely identify a
+    workflow, but also to create a connection between the application domain and the workflow engine.
+
   """
   @moduledoc since: "0.1.0"
 

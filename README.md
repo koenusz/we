@@ -102,10 +102,27 @@ data. If you need to work with big data items it is recommended to store it sepe
 
 ### Storage_adapters
   In development an in memory storage adapter is loaded. For production it is advisable to pass a storage adapter that
-  provides storage to your storage solution (example: Postgresql). A storage asapter needs to implement the `WE.storage.Adapter` behaviour.
+  provides storage to your storage solution (example: Postgresql). A storage asapter needs to implement the `WE.StorageAdapter` behaviour.
 
+```elixir
+def application do
+  [
+    extra_applications: [:logger],
+    mod: {WE.Application, [storage_adapters: [YourApp.YourStorageAdapter]]}
+  ]
+end
+```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/we](https://hexdocs.pm/we).
+### Roadmap
+ - [ ] Integrate [Telemetry](https://hexdocs.pm/telemetry/) 
+ - [ ] Create a web visualisation library
 
+### Contribution
+  Any contribution is appreciated however some contributions are more appreciated than others.
+  From the most to least appreciated types of contribution:
+  - Pullrequest on [GitHub](https://github.com/koenusz/we).
+  - Provide some feedback to improve the documentation.
+  - Creating an issue on Github + [SSCCE](http://sscce.org/).
+  - Creating an issue without SSCCE.
+  - A general remark or thumbs up.
+  - Other.

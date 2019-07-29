@@ -1,9 +1,10 @@
 defmodule WE.InMemoryStorage do
-  @moduledoc ~S"""
-  In-memory storage used by the
-  [WE.Adapter.Local](WE.Adapter.Local.html) module.
-  The data in this storage is stored in memory and won't persist once your
-  application is stopped.
+  @moduledoc """
+  In-memory storage is an in memory implementation of the
+  [WE.StorageAdapter](WE.Adapter.Local.html) behaviour.
+  It is a naieve implementation mainly used for testing purposes or to get
+  up to speed quickly in dev. The data in this storage is stored in memory
+  and won't persist once the application is stopped.
   """
   use GenServer
 

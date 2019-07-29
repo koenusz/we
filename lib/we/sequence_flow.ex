@@ -1,6 +1,6 @@
 defmodule WE.SequenceFlow do
   use TypedStruct
-
+  @moduledoc false
   typedstruct enforce: true do
     field :from, String.t()
     field :to, String.t()

@@ -1,6 +1,6 @@
 defmodule WE.DocumentReference do
   use TypedStruct
-
+  @moduledoc false
   typedstruct enforde: true, opaque: true do
     field :name, String.t()
     field :type, WE.Document.document_type()

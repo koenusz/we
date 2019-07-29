@@ -1,6 +1,6 @@
 defmodule WE.EngineSupervisor do
   use DynamicSupervisor
-
+  @moduledoc false
   @spec start_link([module()]) :: {:error, any} | {:ok, pid}
   def start_link(storage_adapters) do
     DynamicSupervisor.start_link(__MODULE__, storage_adapters, name: __MODULE__)

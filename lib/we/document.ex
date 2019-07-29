@@ -7,7 +7,16 @@ defmodule WE.Document do
   """
   @moduledoc since: "0.1.0"
 
+  @typedoc """
+  possible values: :required | :optional
+  """
+  @doc since: "0.1.0"
   @type document_type :: :required | :optional
+
+  @typedoc """
+  possible values: :complete | :incomplete
+  """
+  @doc since: "0.1.0"
   @type document_status :: :complete | :incomplete
 
   typedstruct enforde: true, opaque: true do
@@ -48,7 +57,7 @@ defmodule WE.Document do
   end
 
   @doc """
-  Retrieve the name form a document struct.
+  Retrieve the name.
   """
   @doc since: "0.1.0"
   @spec name(WE.Document.t()) :: String.t()
@@ -57,7 +66,7 @@ defmodule WE.Document do
   end
 
   @doc """
-    Retrieve the data attached to this document.
+    Retrieve the data.
   """
   @doc since: "0.1.0"
   @spec data(WE.Document.t()) :: map()
@@ -65,6 +74,9 @@ defmodule WE.Document do
     doc.data
   end
 
+  @doc """
+    Retrieve the document_type.
+  """
   @spec type(WE.Document.t()) :: document_type()
   def type(%WE.Document{} = doc) do
     doc.type
@@ -114,15 +126,5 @@ defmodule WE.Document do
   @spec update_data(WE.Document.t(), term()) :: WE.Document.t()
   def update_data(document, data) do
     %{document | data: data}
-  end
-end
-
-defmodule WE.DocumentDefinition do
-  use TypedStruct
-
-  typedstruct enforce: true do
-    field :name, String.t()
-    field :optional, boolean, default: false
-    field :attached_to, WE.Task.t() | WE.Event.t(), enforce: false
   end
 end

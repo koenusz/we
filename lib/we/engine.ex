@@ -1,7 +1,7 @@
 defmodule WE.Engine do
   use GenServer
   use TypedStruct
-
+  @moduledoc false
   @impl GenServer
   @spec init({WE.Workflow.t(), [module()]}, [any()]) ::
           {:ok, WE.WorkflowHistory.t(), [WE.State.t()]}
